@@ -54,9 +54,9 @@ input,select{font-family:inherit;}
 }
 .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
 .login-brand .logo-mark{
-  width:44px;height:44px;border-radius:12px;background:var(--navy);
-  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex:none;
+  width:auto;height:44px;flex:none;
 }
+.login-brand .logo-mark img{height:100%;width:auto;display:block;object-fit:contain;}
 .login-card h1{font-size:20px;color:var(--navy);}
 .login-card p.sub{color:var(--muted);font-size:13px;margin:6px 0 26px;}
 .field{margin-bottom:16px;}
@@ -81,7 +81,8 @@ input,select{font-family:inherit;}
   position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,0.12);
 }
 .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;}
-.topbar .brand .logo-mark{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.topbar .brand .logo-mark{width:auto;height:26px;display:flex;align-items:center;}
+.topbar .brand .logo-mark img{height:100%;width:auto;display:block;background:#fff;border-radius:6px;padding:2px 6px;}
 .topbar .userbox{display:flex;align-items:center;gap:14px;font-size:13px;}
 .topbar .userbox .role-badge{background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;font-size:11.5px;}
 .topbar .logout{background:rgba(255,255,255,0.12);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px;}
@@ -191,13 +192,13 @@ tbody tr:hover{background:var(--navy-pale-2);}
 .search-box input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;}
 .search-result{padding:12px 14px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
 .search-result:hover{background:var(--navy-pale);}
-.chart-wrap{position:relative;min-height:280px;}
-.bar-row{display:grid;grid-template-columns:130px 1fr 120px;gap:10px;align-items:center;margin-bottom:11px;}
-.bar-row-label{font-size:12.5px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bar-row-track{background:var(--navy-pale);border-radius:6px;height:20px;overflow:hidden;}
-.bar-row-fill{height:100%;border-radius:6px;transition:width .3s;}
-.bar-row-value{font-size:12px;color:var(--muted);text-align:left;white-space:nowrap;}
-@media(max-width:640px){.bar-row{grid-template-columns:90px 1fr 90px;} .bar-row-label{font-size:11.5px;} .bar-row-value{font-size:11px;}}
+.chart-wrap{position:relative;min-height:auto;}
+.bar-row{display:grid;grid-template-columns:150px 1fr 105px;gap:8px;align-items:center;margin-bottom:6px;}
+.bar-row-label{font-size:11px;font-weight:700;color:var(--navy);white-space:normal;line-height:1.3;overflow-wrap:anywhere;}
+.bar-row-track{background:var(--navy-pale);border-radius:5px;height:12px;overflow:hidden;}
+.bar-row-fill{height:100%;border-radius:5px;transition:width .3s;}
+.bar-row-value{font-size:10.5px;color:var(--muted);text-align:left;white-space:nowrap;}
+@media(max-width:640px){.bar-row{grid-template-columns:98px 1fr 84px;} .bar-row-label{font-size:10px;} .bar-row-value{font-size:9.5px;}}
 .small-note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.8;}
 .notice{background:#fff4e5;border:1px solid #f0d3a0;color:#8a5a00;padding:10px 14px;border-radius:9px;font-size:12.5px;margin-bottom:14px;}
 .tab-pill-group{display:flex;gap:6px;margin-bottom:14px;}
@@ -230,7 +231,7 @@ tbody tr:hover{background:var(--navy-pale-2);}
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-brand">
-      <div class="logo-mark">۲۴</div>
+      <div class="logo-mark"><img src="data:image/png;base64,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" alt="لوگو سپ"></div>
       <h1>سامانه عملکرد کارکنان</h1>
     </div>
     <p class="sub">برای ورود، نام کاربری و رمز عبور خود را وارد کنید</p>
@@ -251,7 +252,7 @@ tbody tr:hover{background:var(--navy-pale-2);}
 <!-- ============ APP SHELL ============ -->
 <div id="appShell">
   <div class="topbar">
-    <div class="brand"><span class="logo-mark">◆</span> سامانه مدیریت عملکرد کارکنان</div>
+    <div class="brand"><span class="logo-mark"><img src="data:image/png;base64,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" alt="لوگو سپ"></span> سامانه مدیریت عملکرد کارکنان</div>
     <div class="userbox">
       <span id="userboxName"></span>
       <span class="role-badge" id="userboxRole"></span>
@@ -303,13 +304,13 @@ tbody tr:hover{background:var(--navy-pale-2);}
 
       <div class="section-card">
         <h3>نمودار رتبه‌بندی کلی (امتیاز نهایی)</h3>
-        <div class="chart-wrap" style="height:380px;"><div id="chartRankOverall"></div></div>
+        <div class="chart-wrap"><div id="chartRankOverall"></div></div>
       </div>
 
       <div class="section-card">
         <h3>رتبه‌بندی هر شاخص به‌صورت جداگانه</h3>
         <div class="tab-pill-group" id="rankIndicatorPills"></div>
-        <div class="chart-wrap" style="height:380px;"><div id="chartRankIndicator"></div></div>
+        <div class="chart-wrap"><div id="chartRankIndicator"></div></div>
       </div>
     </div>
 
@@ -541,11 +542,11 @@ const EMPLOYEES = [
 ];
 
 const MANAGERS = [
-  {name:"نعیمه جعفری", pass:"123456", canEditWeights:false},
-  {name:"مجید شریف زاده", pass:"123456", canEditWeights:false},
-  {name:"ماهان صباغیان", pass:"123456", canEditWeights:false},
-  {name:"رضا رهبرمهرپو", pass:"123456", canEditWeights:false},
-  {name:"مجتبی طاهرخانی", pass:"2410841", canEditWeights:true, canUpload:true},
+  {name:"نعیمه جعفری", pass:"123456", canEditWeights:false, region:"ناحیه ۱"},
+  {name:"مجید شریف زاده", pass:"123456", canEditWeights:false, region:"ناحیه ۳"},
+  {name:"ماهان صباغیان", pass:"123456", canEditWeights:false, region:"ناحیه ۲"},
+  {name:"رضا رهبرمهرپو", pass:"123456", canEditWeights:false, fullAccess:true},
+  {name:"مجتبی طاهرخانی", pass:"2410841", canEditWeights:true, canUpload:true, fullAccess:true},
 ];
 
 const REGIONS = {
@@ -765,7 +766,7 @@ function handleLogin(){
   const mgr = MANAGERS.find(m=>m.name===u);
   if(mgr){
     if(mgr.pass === p){
-      currentUser = {name:mgr.name, role:"manager", canEditWeights: !!mgr.canEditWeights, canUpload: !!mgr.canUpload};
+      currentUser = {name:mgr.name, role:"manager", canEditWeights: !!mgr.canEditWeights, canUpload: !!mgr.canUpload, fullAccess: !!mgr.fullAccess, region: mgr.region || null};
       startApp();
       return;
     }else{ errEl.textContent = "رمز عبور اشتباه است."; return; }
@@ -2254,16 +2255,23 @@ async function confirmMapping(){
 }
 
 /* ================= MESSAGES ================= */
+function messagableEmployees(){
+  if(currentUser.fullAccess) return EMPLOYEES.map(e=>e.name);
+  if(currentUser.region && REGIONS[currentUser.region]) return REGIONS[currentUser.region].members;
+  return EMPLOYEES.map(e=>e.name);
+}
 function renderMessagesView(){
   const composeCard = document.getElementById("messageComposeCard");
   const listTitle = document.getElementById("messagesListTitle");
   if(currentUser.role==="manager"){
     composeCard.classList.remove("hidden");
-    listTitle.textContent = "پیام‌های ثبت‌شده";
+    const allowed = messagableEmployees();
+    listTitle.textContent = currentUser.fullAccess ? "پیام‌های ثبت‌شده (همه کارکنان)" : `پیام‌های ثبت‌شده (کارکنان ${currentUser.region})`;
     const sel = document.getElementById("msgEmployee");
-    sel.innerHTML = EMPLOYEES.map(e=>`<option value="${e.name}">${e.name}</option>`).join("");
+    sel.innerHTML = allowed.map(name=>`<option value="${name}">${name}</option>`).join("");
     document.getElementById("msgDate").value = new Date().toLocaleDateString("fa-IR");
-    renderMessagesList(messages);
+    const visible = currentUser.fullAccess ? messages : messages.filter(m=>allowed.includes(m.employee));
+    renderMessagesList(visible);
   }else{
     composeCard.classList.add("hidden");
     document.getElementById("messagesGrid").style.gridTemplateColumns = "1fr";
@@ -2299,12 +2307,16 @@ async function submitMessage(){
   const text = document.getElementById("msgText").value.trim();
   const msgEl = document.getElementById("msgSubmitMsg");
   if(!text){ msgEl.innerHTML = `<span style="color:var(--warn);">متن پیام را وارد کنید.</span>`; return; }
+  if(!messagableEmployees().includes(employee)){
+    msgEl.innerHTML = `<span style="color:var(--warn);">شما اجازه ارسال پیام برای این کارمند را ندارید.</span>`;
+    return;
+  }
   const saved = await supaAddMessage({employee, manager:currentUser.name, type, message:text});
   if(saved){
     document.getElementById("msgText").value = "";
     msgEl.innerHTML = `<span style="color:var(--good);">✔ پیام ثبت شد و برای کارمند تقریباً لحظه‌ای (طی چند ثانیه) قابل مشاهده است.</span>`;
     messages = await supaGetMessages();
-    renderMessagesList(messages);
+    renderMessagesView();
   }else{
     msgEl.innerHTML = `<span style="color:var(--warn);">⚠ ثبت پیام ناموفق بود — اتصال به پایگاه‌داده را بررسی کنید.</span>`;
   }
