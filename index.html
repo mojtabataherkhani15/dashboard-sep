@@ -104,27 +104,33 @@ input,select{font-family:inherit;}
 .view.active{display:block;}
 
 /* ---------- Filters ---------- */
+.filters-section{margin-bottom:16px;}
+.filters-section-title{font-size:12px;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.filters-section-title::before{content:"";width:3px;height:13px;background:var(--navy-lighter);border-radius:2px;display:inline-block;}
+.filters-section-hint{font-weight:500;color:var(--muted);font-size:11px;}
 .filters-bar{
-  background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;
-  display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;box-shadow:var(--shadow);
+  background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;
+  display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;box-shadow:0 1px 3px rgba(30,58,95,0.05);
 }
-.filter-group{position:relative;min-width:170px;}
-.filter-group label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;font-weight:700;}
+.filter-group{position:relative;min-width:140px;}
+.filter-group label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:4px;font-weight:700;}
 .filter-toggle{
-  width:100%;text-align:right;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--navy-pale-2);
-  font-size:12.5px;display:flex;justify-content:space-between;align-items:center;gap:6px;
+  width:100%;text-align:right;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--navy-pale-2);
+  font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:6px;color:var(--ink);transition:.15s;
 }
-.filter-toggle:hover{border-color:var(--navy-lighter);}
+.filter-toggle span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;}
+.filter-toggle svg{flex:none;opacity:.5;}
+.filter-toggle:hover{border-color:var(--navy-lighter);background:#fff;}
 .filter-panel{
-  display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);
-  border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.14);padding:8px;z-index:60;min-width:200px;max-height:260px;overflow-y:auto;
+  display:none;position:absolute;top:calc(100% + 5px);right:0;background:#fff;border:1px solid var(--border);
+  border-radius:10px;box-shadow:0 12px 28px rgba(20,30,50,0.14);padding:6px;z-index:60;min-width:190px;max-height:250px;overflow-y:auto;
 }
 .filter-panel.open{display:block;}
-.filter-panel label.opt{display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12.5px;border-radius:6px;cursor:pointer;}
+.filter-panel label.opt{display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;border-radius:6px;cursor:pointer;}
 .filter-panel label.opt:hover{background:var(--navy-pale);}
-.filter-panel hr{border:none;border-top:1px solid var(--border);margin:6px 0;}
-.filters-reset{padding:9px 14px;border:1.5px solid var(--navy);color:var(--navy);background:#fff;border-radius:9px;font-size:12.5px;font-weight:700;}
-.filters-reset:hover{background:var(--navy-pale);}
+.filter-panel hr{border:none;border-top:1px solid var(--border);margin:5px 0;}
+.filters-reset{padding:7px 13px;border:1px solid var(--border);color:var(--muted);background:#fff;border-radius:8px;font-size:11.5px;font-weight:700;align-self:flex-end;}
+.filters-reset:hover{background:var(--navy-pale);color:var(--navy);border-color:var(--navy-lighter);}
 
 /* ---------- KPI cards ---------- */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px;}
@@ -310,7 +316,10 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div class="section-card">
         <h3>رتبه‌بندی هر شاخص به‌صورت جداگانه</h3>
         <div class="tab-pill-group" id="rankIndicatorPills"></div>
-        <div class="chart-wrap"><div id="chartRankIndicator"></div></div>
+        <div class="grid-2">
+          <div><div class="chart-wrap"><div id="chartRankIndicator"></div></div></div>
+          <div id="rankIndicatorPieHolder"><div class="chart-wrap"><div id="chartRankIndicatorPie"></div></div></div>
+        </div>
       </div>
     </div>
 
@@ -320,14 +329,12 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div id="myKpis" class="kpi-grid"></div>
       <div class="grid-2">
         <div class="section-card">
-          <h3>روند عملکرد من</h3>
-          <div class="tab-pill-group" id="myTrendModePills"></div>
-          <div class="tab-pill-group" id="myTrendIndicatorPills"></div>
-          <div class="chart-wrap"><div id="myTrendChart"></div></div>
-        </div>
-        <div class="section-card">
           <h3>مقایسه با میانگین کل</h3>
           <div id="myComparisonBox"></div>
+        </div>
+        <div class="section-card">
+          <h3>بستر ارتباطی من</h3>
+          <div class="chart-wrap"><div id="myChannelChart"></div></div>
         </div>
       </div>
       <div class="section-card">
@@ -346,6 +353,21 @@ tbody tr:hover{background:var(--navy-pale-2);}
       </div>
     </div>
 
+    <!-- ---- EMPLOYEE TREND VIEW ---- -->
+    <div class="view" id="view-mytrend">
+      <div id="myTrendKpis" class="kpi-grid"></div>
+      <div class="section-card">
+        <h3>روند عملکرد</h3>
+        <div class="tab-pill-group" id="myTrendModePills"></div>
+        <div class="tab-pill-group" id="myTrendIndicatorPills"></div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:700;color:var(--muted);">مقایسه با کارمند دیگر (اختیاری):</label>
+          <select id="myTrendCompareSelect" style="margin-top:8px;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:260px;width:100%;"></select>
+        </div>
+        <div class="chart-wrap" style="height:360px;"><div id="myTrendChart"></div></div>
+      </div>
+    </div>
+
     <!-- ---- RETURNS VIEW (مرجوعی‌ها) ---- -->
     <div class="view" id="view-returns">
       <div id="returnsFiltersHolder"></div>
@@ -358,7 +380,6 @@ tbody tr:hover{background:var(--navy-pale-2);}
 
     <!-- ---- TREND VIEW ---- -->
     <div class="view" id="view-trend">
-      <div id="trendFiltersHolder"></div>
       <div class="section-card">
         <h3>روند عملکرد کارکنان</h3>
         <div class="tab-pill-group" id="trendModePills"></div>
@@ -391,19 +412,18 @@ tbody tr:hover{background:var(--navy-pale-2);}
     <div class="view" id="view-regions">
       <div id="regionsFiltersHolder"></div>
       <div class="section-card">
-        <h3>جستجوی ناحیه</h3>
-        <div class="search-box">
-          <input type="text" id="regionSearchInput" placeholder="نام ناحیه را وارد کنید (مثلاً ناحیه ۲)..." oninput="renderRegionsView()">
-        </div>
-      </div>
-      <div class="section-card">
         <h3>رتبه‌بندی نواحی</h3>
-        <p class="small-note">امتیاز هر ناحیه از میانگین چهار شاخص (تعداد کارکنان، مبلغ بازاریابی، تعداد تراکنش، تعداد بازاریابی) به‌دست می‌آید، سپس در ضریب پراکندگی و ضریب تعداد کارکنان آن ناحیه ضرب می‌شود.</p>
+        <p class="small-note">امتیاز هر ناحیه از میانگین سه شاخص (مبلغ بازاریابی، تعداد تراکنش، تعداد بازاریابی) نسبت به هدف به‌دست می‌آید، سپس در ضریب پراکندگی و ضریب تعداد کارکنان آن ناحیه ضرب می‌شود.</p>
         <div id="regionsTableHolder"></div>
       </div>
       <div class="section-card">
         <h3>نمودار امتیاز نهایی نواحی</h3>
         <div class="chart-wrap"><div id="chartRegions"></div></div>
+      </div>
+      <div class="section-card">
+        <h3>سهم هر ناحیه از کل (درصدی)</h3>
+        <div class="tab-pill-group" id="regionPieIndicatorPills"></div>
+        <div class="chart-wrap"><div id="chartRegionsPie"></div></div>
       </div>
     </div>
 
@@ -435,10 +455,6 @@ tbody tr:hover{background:var(--navy-pale-2);}
     <!-- ---- SECTORS VIEW (manager only) ---- -->
     <div class="view" id="view-sectors">
       <div id="sectorsFiltersHolder"></div>
-      <div class="section-card">
-        <h3>فیلتر صنف</h3>
-        <div id="sectorPicker" style="display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto;"></div>
-      </div>
       <div class="section-card">
         <h3>عملکرد صنف‌ها</h3>
         <div id="sectorsTableHolder"></div>
@@ -542,11 +558,11 @@ const EMPLOYEES = [
 ];
 
 const MANAGERS = [
-  {name:"نعیمه جعفری", pass:"123456", canEditWeights:false, region:"ناحیه ۱"},
-  {name:"مجید شریف زاده", pass:"123456", canEditWeights:false, region:"ناحیه ۳"},
-  {name:"ماهان صباغیان", pass:"123456", canEditWeights:false, region:"ناحیه ۲"},
-  {name:"رضا رهبرمهرپو", pass:"123456", canEditWeights:false, fullAccess:true},
-  {name:"مجتبی طاهرخانی", pass:"2410841", canEditWeights:true, canUpload:true, fullAccess:true},
+  {name:"نعیمه جعفری", pass:"123456", canEditWeights:false, region:"ناحیه ۱", roleLabel:"مسئول ناحیه"},
+  {name:"مجید شریف زاده", pass:"123456", canEditWeights:false, region:"ناحیه ۳", roleLabel:"مسئول ناحیه"},
+  {name:"ماهان صباغیان", pass:"123456", canEditWeights:false, region:"ناحیه ۲", roleLabel:"مسئول ناحیه"},
+  {name:"رضا رهبرمهرپو", pass:"123456", canEditWeights:false, fullAccess:true, roleLabel:"مدیر"},
+  {name:"مجتبی طاهرخانی", pass:"2410841", canEditWeights:true, canUpload:true, fullAccess:true, roleLabel:"مدیر سایت"},
 ];
 
 const REGIONS = {
@@ -630,7 +646,11 @@ let records = [];       // normalized records from excel
 let weights = JSON.parse(JSON.stringify(DEFAULT_WEIGHTS));
 let messages = [];
 let wideMonthlyPairs = []; // detected monthly amount/transaction column pairs
-let filters = { months:new Set(), employees:new Set(), regions:new Set(), channels:new Set(), banks:new Set(), outputMonths:new Set() };
+let filters = {
+  months:new Set(), employees:new Set(), regions:new Set(), banks:new Set(), sectors:new Set(),
+  channels:new Set(), terminalStatuses:new Set(),
+  outputMonthsAmount:new Set(), outputMonthsTx:new Set(),
+};
 let trendMode = "monthly"; // monthly | quarterly
 let myTrendMode = "monthly";
 let trendIndicator = "amount"; // amount | transactions | count
@@ -766,7 +786,7 @@ function handleLogin(){
   const mgr = MANAGERS.find(m=>m.name===u);
   if(mgr){
     if(mgr.pass === p){
-      currentUser = {name:mgr.name, role:"manager", canEditWeights: !!mgr.canEditWeights, canUpload: !!mgr.canUpload, fullAccess: !!mgr.fullAccess, region: mgr.region || null};
+      currentUser = {name:mgr.name, role:"manager", canEditWeights: !!mgr.canEditWeights, canUpload: !!mgr.canUpload, fullAccess: !!mgr.fullAccess, region: mgr.region || null, roleLabel: mgr.roleLabel || "مدیر"};
       startApp();
       return;
     }else{ errEl.textContent = "رمز عبور اشتباه است."; return; }
@@ -786,7 +806,7 @@ async function startApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("appShell").style.display = "block";
   document.getElementById("userboxName").textContent = currentUser.name;
-  document.getElementById("userboxRole").textContent = currentUser.role==="manager" ? "مدیر" : "کارمند" + (currentUser.region!=="نامشخص" ? " · " + currentUser.region : "");
+  document.getElementById("userboxRole").textContent = currentUser.role==="manager" ? (currentUser.roleLabel + (currentUser.region ? " · " + currentUser.region : "")) : "کارمند" + (currentUser.region!=="نامشخص" ? " · " + currentUser.region : "");
   await checkStorageAvailability();
   await loadAll();
   buildTabs();
@@ -815,9 +835,6 @@ function buildTabs(){
       {label:"بازاریابی ناحیه", singleId:"regions", items:[
         {id:"regions", label:"ناحیه‌ها"},
       ]},
-      {label:"شاخص‌ رتبه‌بندی", singleId:"weights", items:[
-        {id:"weights", label:"شاخص‌ رتبه‌بندی"},
-      ]},
       {label:"پیام‌ها", singleId:"messages", items:[
         {id:"messages", label:"پیام‌ها"},
       ]},
@@ -825,10 +842,14 @@ function buildTabs(){
     if(currentUser.canUpload){
       groups.push({label:"آپلود اکسل", singleId:"upload", items:[{id:"upload", label:"آپلود اکسل"}]});
     }
+    groups.push({label:"شاخص‌ رتبه‌بندی", singleId:"weights", items:[
+      {id:"weights", label:"شاخص‌ رتبه‌بندی"},
+    ]});
   }else{
     groups = [
       {flat:true, items:[
         {id:"mydashboard", label:"داشبورد من"},
+        {id:"mytrend", label:"روند عملکرد"},
         {id:"returns", label:"مرجوعی‌های من"},
         {id:"messages", label:"پیام‌های مدیر"},
       ]}
@@ -907,6 +928,7 @@ function switchTab(id){
 
   if(id==="dashboard") renderManagerDashboard();
   if(id==="mydashboard") renderMyDashboard();
+  if(id==="mytrend") renderMyTrendView();
   if(id==="returns") renderReturnsView();
   if(id==="trend") renderTrendView();
   if(id==="regions") renderRegionsView();
@@ -926,88 +948,128 @@ function availableValues(field){
     if(field==="region") set.add(regionOfEmployee(r.employee));
     if(field==="channel") set.add(r.channel);
     if(field==="bank") set.add(r.bank);
+    if(field==="sector") set.add(r.sector);
+    if(field==="terminalStatus") set.add(r.terminalStatus);
   });
   return Array.from(set).filter(Boolean).sort();
 }
-function passesOutputMonth(r){
-  return filters.outputMonths.size===0 || filters.outputMonths.has(r.activityMonth);
+function passesOutputMonthForAmount(r){
+  return filters.outputMonthsAmount.size===0 || filters.outputMonthsAmount.has(r.activityMonth);
+}
+function passesOutputMonthForTx(r){
+  return filters.outputMonthsTx.size===0 || filters.outputMonthsTx.has(r.activityMonth);
 }
 function monthsInScopeForCount(){
   if(filters.months.size) return filters.months.size;
   const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && r.installMonth).map(r=>r.installMonth));
   return present.size || 1;
 }
-function monthsInScopeForOutput(){
-  if(filters.outputMonths.size) return filters.outputMonths.size;
-  const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && (r.amount||r.transactions)).map(r=>r.activityMonth));
+function monthsInScopeForOutputAmount(){
+  if(filters.outputMonthsAmount.size) return filters.outputMonthsAmount.size;
+  const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && r.amount).map(r=>r.activityMonth));
+  return present.size || 1;
+}
+function monthsInScopeForOutputTx(){
+  if(filters.outputMonthsTx.size) return filters.outputMonthsTx.size;
+  const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && r.transactions).map(r=>r.activityMonth));
   return present.size || 1;
 }
 
 const PERSIAN_MONTHS_FILTER = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+function filterToggleLabel(set){
+  if(set.size===0) return "همه";
+  if(set.size===1) return Array.from(set)[0];
+  return set.size + " مورد";
+}
+function buildFilterGroup(bar, d, opts){
+  if(opts.lockEmployee && d.key==="employees") return;
+  const g = document.createElement("div");
+  g.className = "filter-group";
+  const label = document.createElement("label");
+  label.textContent = d.label;
+  g.appendChild(label);
+
+  const toggle = document.createElement("button");
+  toggle.className = "filter-toggle";
+  toggle.innerHTML = `<span>${filterToggleLabel(d.set)}</span><svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  toggle.onclick = (e)=>{
+    e.stopPropagation();
+    document.querySelectorAll(".filter-panel").forEach(p=>{ if(p!==panel) p.classList.remove("open"); });
+    panel.classList.toggle("open");
+  };
+  g.appendChild(toggle);
+
+  const panel = document.createElement("div");
+  panel.className = "filter-panel";
+  const allLabel = document.createElement("label");
+  allLabel.className = "opt";
+  allLabel.innerHTML = `<input type="checkbox" ${d.set.size===0?"checked":""}> همه`;
+  allLabel.querySelector("input").onchange = ()=>{ d.set.clear(); refreshCurrentView(); };
+  panel.appendChild(allLabel);
+  const hr = document.createElement("hr"); panel.appendChild(hr);
+  d.values.forEach(v=>{
+    const lab = document.createElement("label");
+    lab.className = "opt";
+    const checked = d.set.has(v);
+    lab.innerHTML = `<input type="checkbox" ${checked?"checked":""}> ${v}`;
+    lab.querySelector("input").onchange = (e)=>{
+      if(e.target.checked) d.set.add(v); else d.set.delete(v);
+      refreshCurrentView();
+    };
+    panel.appendChild(lab);
+  });
+  g.appendChild(panel);
+  bar.appendChild(g);
+}
+function orderMonthValues(values){
+  return PERSIAN_MONTHS.filter(m=>values.includes(m)).concat(values.filter(m=>!PERSIAN_MONTHS.includes(m)));
+}
 function buildFilterBar(containerId, opts={}){
   const holder = document.getElementById(containerId);
   holder.innerHTML = "";
-  const bar = document.createElement("div");
-  bar.className = "filters-bar";
+  const exclude = opts.excludeKeys || [];
 
-  const defs = [
-    {key:"months", label:"ماه نصب", values:availableValues("month"), set:filters.months},
-    {key:"employees", label:"کارمند", values: opts.lockEmployee ? [currentUser.name] : availableValues("employee"), set:filters.employees},
+  const inputDefs = [
+    {key:"months", label:"ماه نصب", values:orderMonthValues(availableValues("month")), set:filters.months},
+    {key:"employees", label:"پشتیبان", values: opts.lockEmployee ? [currentUser.name] : availableValues("employee"), set:filters.employees},
     {key:"regions", label:"ناحیه", values:availableValues("region"), set:filters.regions},
-    {key:"channels", label:"بستر ارتباطی", values:availableValues("channel"), set:filters.channels},
     {key:"banks", label:"بانک", values:availableValues("bank"), set:filters.banks},
-    {key:"outputMonths", label:"ماه خروجی (مبلغ/تعداد تراکنش)", values:PERSIAN_MONTHS_FILTER, set:filters.outputMonths},
-  ];
+    {key:"sectors", label:"صنف", values:availableValues("sector"), set:filters.sectors},
+    {key:"channels", label:"بستر ارتباطی", values:availableValues("channel"), set:filters.channels},
+    {key:"terminalStatuses", label:"وضعیت ترمینال", values:availableValues("terminalStatus"), set:filters.terminalStatuses},
+  ].filter(d=>!exclude.includes(d.key));
+  const outputDefs = [
+    {key:"outputMonthsAmount", label:"ماه سرجمع مبلغ", values:PERSIAN_MONTHS_FILTER, set:filters.outputMonthsAmount},
+    {key:"outputMonthsTx", label:"ماه سرجمع تراکنش", values:PERSIAN_MONTHS_FILTER, set:filters.outputMonthsTx},
+  ].filter(d=>!exclude.includes(d.key));
 
-  defs.forEach(d=>{
-    if(opts.lockEmployee && d.key==="employees") return; // hide employee filter for own dashboard
-    const g = document.createElement("div");
-    g.className = "filter-group";
-    const label = document.createElement("label");
-    label.textContent = d.label;
-    g.appendChild(label);
-
-    const toggle = document.createElement("button");
-    toggle.className = "filter-toggle";
-    const countTxt = d.set.size===0 ? "همه" : (d.set.size + " مورد");
-    toggle.innerHTML = `<span>${countTxt}</span><span>▾</span>`;
-    toggle.onclick = (e)=>{
-      e.stopPropagation();
-      document.querySelectorAll(".filter-panel").forEach(p=>{ if(p!==panel) p.classList.remove("open"); });
-      panel.classList.toggle("open");
-    };
-    g.appendChild(toggle);
-
-    const panel = document.createElement("div");
-    panel.className = "filter-panel";
-    const allLabel = document.createElement("label");
-    allLabel.className = "opt";
-    allLabel.innerHTML = `<input type="checkbox" ${d.set.size===0?"checked":""}> همه`;
-    allLabel.querySelector("input").onchange = ()=>{ d.set.clear(); refreshCurrentView(); };
-    panel.appendChild(allLabel);
-    const hr = document.createElement("hr"); panel.appendChild(hr);
-    d.values.forEach(v=>{
-      const lab = document.createElement("label");
-      lab.className = "opt";
-      const checked = d.set.has(v);
-      lab.innerHTML = `<input type="checkbox" ${checked?"checked":""}> ${v}`;
-      lab.querySelector("input").onchange = (e)=>{
-        if(e.target.checked) d.set.add(v); else d.set.delete(v);
-        refreshCurrentView();
-      };
-      panel.appendChild(lab);
-    });
-    g.appendChild(panel);
-    bar.appendChild(g);
-  });
-
+  const inputSection = document.createElement("div");
+  inputSection.className = "filters-section";
+  inputSection.innerHTML = `<div class="filters-section-title">فیلترهای ورودی</div>`;
+  const inputBar = document.createElement("div");
+  inputBar.className = "filters-bar";
+  inputDefs.forEach(d=> buildFilterGroup(inputBar, d, opts));
   const resetBtn = document.createElement("button");
   resetBtn.className = "filters-reset";
   resetBtn.textContent = "پاک‌کردن فیلترها";
-  resetBtn.onclick = ()=>{ filters.months.clear(); filters.employees.clear(); filters.regions.clear(); filters.channels.clear(); filters.banks.clear(); filters.outputMonths.clear(); refreshCurrentView(); };
-  bar.appendChild(resetBtn);
+  resetBtn.onclick = ()=>{
+    Object.values(filters).forEach(s=>s.clear());
+    refreshCurrentView();
+  };
+  inputBar.appendChild(resetBtn);
+  inputSection.appendChild(inputBar);
 
-  holder.appendChild(bar);
+  holder.appendChild(inputSection);
+  if(outputDefs.length){
+    const outputSection = document.createElement("div");
+    outputSection.className = "filters-section";
+    outputSection.innerHTML = `<div class="filters-section-title">فیلترهای خروجی <span class="filters-section-hint">— فقط روی مبلغ و تعداد تراکنش اثر می‌گذارد</span></div>`;
+    const outputBar = document.createElement("div");
+    outputBar.className = "filters-bar";
+    outputDefs.forEach(d=> buildFilterGroup(outputBar, d, opts));
+    outputSection.appendChild(outputBar);
+    holder.appendChild(outputSection);
+  }
 }
 document.addEventListener("click", ()=> document.querySelectorAll(".filter-panel").forEach(p=>p.classList.remove("open")) );
 
@@ -1026,20 +1088,28 @@ function applyFilters(recs, opts={}){
     if(filters.regions.size && !filters.regions.has(regionOfEmployee(r.employee))) return false;
     if(filters.channels.size && !filters.channels.has(r.channel)) return false;
     if(filters.banks.size && !filters.banks.has(r.bank)) return false;
+    if(filters.sectors.size && !filters.sectors.has(r.sector)) return false;
+    if(filters.terminalStatuses.size && !filters.terminalStatuses.has(r.terminalStatus)) return false;
     return true;
   });
 }
 
 /* ================= KPI CALCS ================= */
 function installedOnly(recs){ return recs.filter(r=> (r.terminalStatus||"").trim()==="نصب شده"); }
+function calcRatios(amount, transactions, count){
+  return {
+    TP: count ? transactions/count : 0,       // تعداد تراکنش ÷ تعداد بازاریابی
+    AP: count ? amount/count : 0,             // مبلغ تراکنش ÷ تعداد بازاریابی
+    AT: transactions ? amount/transactions : 0, // مبلغ تراکنش ÷ تعداد تراکنش
+  };
+}
 
 function computeKpis(recs){
   const inst = installedOnly(recs);
   const storeSet = new Set(inst.map(r=>r.store));
   const totalCount = storeSet.size;
-  const outputRecs = inst.filter(passesOutputMonth);
-  const totalAmount = outputRecs.reduce((s,r)=>s+(Number(r.amount)||0),0);
-  const totalTx = outputRecs.reduce((s,r)=>s+(Number(r.transactions)||0),0);
+  const totalAmount = inst.filter(passesOutputMonthForAmount).reduce((s,r)=>s+(Number(r.amount)||0),0);
+  const totalTx = inst.filter(passesOutputMonthForTx).reduce((s,r)=>s+(Number(r.transactions)||0),0);
   return {totalCount, totalAmount, totalTx, installedRecords:inst};
 }
 function fmtNum(n){ return Number(n||0).toLocaleString("fa-IR"); }
@@ -1165,10 +1235,8 @@ function employeeStatsList(recs){
     if(!byEmp[e]) byEmp[e] = {employee:e, region:regionOfEmployee(e), count:new Set(), amount:0, transactions:0, gprsTotal:0, gprsBlocked:0};
     if(!gprsSeenPerEmp[e]) gprsSeenPerEmp[e] = new Set();
     byEmp[e].count.add(r.store);
-    if(passesOutputMonth(r)){
-      byEmp[e].amount += Number(r.amount)||0;
-      byEmp[e].transactions += Number(r.transactions)||0;
-    }
+    if(passesOutputMonthForAmount(r)) byEmp[e].amount += Number(r.amount)||0;
+    if(passesOutputMonthForTx(r)) byEmp[e].transactions += Number(r.transactions)||0;
     if((r.channel||"").toUpperCase().includes("GPRS") && !gprsSeenPerEmp[e].has(r.store)){
       gprsSeenPerEmp[e].add(r.store);
       byEmp[e].gprsTotal++;
@@ -1179,6 +1247,7 @@ function employeeStatsList(recs){
     employee:e.employee, region:e.region, count:e.count.size, amount:e.amount, transactions:e.transactions,
     gprsBlockedPct: e.gprsTotal ? (e.gprsBlocked/e.gprsTotal*100) : 0,
     gprsScore: e.gprsTotal ? (e.gprsBlocked/e.gprsTotal*100) : 0, // higher blocked % = better, per policy
+    ...calcRatios(e.amount, e.transactions, e.count.size),
   }));
 }
 
@@ -1200,13 +1269,11 @@ function groupByField(recs, field){
   inst.forEach(r=>{
     const key = r[field] || "نامشخص";
     if(!map[key]){ map[key] = {value:key, storeCount:0, amount:0, transactions:0}; seenStores[key] = new Set(); }
-    if(passesOutputMonth(r)){
-      map[key].amount += Number(r.amount)||0;
-      map[key].transactions += Number(r.transactions)||0;
-    }
+    if(passesOutputMonthForAmount(r)) map[key].amount += Number(r.amount)||0;
+    if(passesOutputMonthForTx(r)) map[key].transactions += Number(r.transactions)||0;
     if(!seenStores[key].has(r.store)){ seenStores[key].add(r.store); map[key].storeCount++; }
   });
-  return Object.values(map).sort((a,b)=>b.amount-a.amount);
+  return Object.values(map).map(g=>({...g, ...calcRatios(g.amount, g.transactions, g.storeCount)})).sort((a,b)=>b.amount-a.amount);
 }
 
 /* ---- region ranking ---- */
@@ -1220,19 +1287,20 @@ const REGION_TARGET_PER_EMP = { count:40, amount:100000000000, transactions:1000
 function computeRegionRanking(recs){
   const inst = installedOnly(recs);
   const countMonths = monthsInScopeForCount();
-  const outputMonths = monthsInScopeForOutput();
+  const outputMonthsA = monthsInScopeForOutputAmount();
+  const outputMonthsT = monthsInScopeForOutputTx();
   const list = Object.keys(REGIONS).map(rname=>{
     const regionRecs = inst.filter(r=>regionOfEmployee(r.employee)===rname);
-    const amount = regionRecs.filter(passesOutputMonth).reduce((s,r)=>s+(Number(r.amount)||0),0);
-    const transactions = regionRecs.filter(passesOutputMonth).reduce((s,r)=>s+(Number(r.transactions)||0),0);
+    const amount = regionRecs.filter(passesOutputMonthForAmount).reduce((s,r)=>s+(Number(r.amount)||0),0);
+    const transactions = regionRecs.filter(passesOutputMonthForTx).reduce((s,r)=>s+(Number(r.transactions)||0),0);
     const count = new Set(regionRecs.map(r=>r.store)).size;
     const employeeCount = REGIONS[rname].members.length;
     const coef = REGION_COEFFICIENTS[rname];
     const factor = coef.dispersion * coef.staff;
 
     // Target itself is NOT adjusted by the coefficient — it's a plain per-employee monthly quota.
-    const targetAmount = employeeCount * REGION_TARGET_PER_EMP.amount * outputMonths;
-    const targetTransactions = employeeCount * REGION_TARGET_PER_EMP.transactions * outputMonths;
+    const targetAmount = employeeCount * REGION_TARGET_PER_EMP.amount * outputMonthsA;
+    const targetTransactions = employeeCount * REGION_TARGET_PER_EMP.transactions * outputMonthsT;
     const targetCount = employeeCount * REGION_TARGET_PER_EMP.count * countMonths;
 
     // Without coefficient: real achieved numbers straight against target.
@@ -1256,6 +1324,7 @@ function computeRegionRanking(recs){
       achAmountAdj, achTransactionsAdj, achCountAdj, scoreAdj,
       dispersionCoef: coef.dispersion, staffCoef: coef.staff,
       finalScore: scoreAdj, // official ranking/score uses the with-coefficient version
+      ...calcRatios(amount, transactions, count),
     };
   });
   list.sort((a,b)=>b.finalScore-a.finalScore);
@@ -1302,11 +1371,15 @@ function renderManagerDashboard(){
     return;
   }
 
+  const ratios = calcRatios(totalAmount, totalTx, totalCount);
   kpiHolder.innerHTML = `
     <div class="kpi-card"><div class="label">تعداد بازاریابی (نصب‌شده)</div><div class="value">${fmtNum(totalCount)}</div></div>
     <div class="kpi-card"><div class="label">سرجمع مبلغ بازاریابی</div><div class="value">${fmtMoney(totalAmount)}</div></div>
     <div class="kpi-card"><div class="label">سرجمع تعداد تراکنش</div><div class="value">${fmtNum(totalTx)}</div></div>
     <div class="kpi-card"><div class="label">تعداد کارمندان فعال</div><div class="value">${fmtNum(new Set(installedOnly(filtered).map(r=>r.employee)).size)}</div></div>
+    <div class="kpi-card"><div class="label">TP (تراکنش ÷ بازاریابی)</div><div class="value">${ratios.TP.toFixed(2)}</div></div>
+    <div class="kpi-card"><div class="label">AP (مبلغ ÷ بازاریابی)</div><div class="value" style="font-size:16px;">${fmtMoney(ratios.AP)}</div></div>
+    <div class="kpi-card"><div class="label">AT (مبلغ ÷ تراکنش)</div><div class="value" style="font-size:16px;">${fmtMoney(ratios.AT)}</div></div>
   `;
 
   // channel chart
@@ -1326,10 +1399,11 @@ function renderManagerDashboard(){
   const regionRows = Object.keys(REGIONS).map(rname=>{
     const recsInRegion = filtered.filter(r=>regionOfEmployee(r.employee)===rname);
     const k = computeKpis(recsInRegion);
-    return `<tr><td>${rname}</td><td>${REGIONS[rname].manager}</td><td>${fmtNum(k.totalCount)}</td><td>${fmtMoney(k.totalAmount)}</td><td>${fmtNum(k.totalTx)}</td></tr>`;
+    const rr = calcRatios(k.totalAmount, k.totalTx, k.totalCount);
+    return `<tr><td>${rname}</td><td>${REGIONS[rname].manager}</td><td>${fmtNum(k.totalCount)}</td><td>${fmtMoney(k.totalAmount)}</td><td>${fmtNum(k.totalTx)}</td><td>${rr.TP.toFixed(2)}</td><td>${fmtMoney(rr.AP)}</td><td>${fmtMoney(rr.AT)}</td></tr>`;
   }).join("");
   document.getElementById("regionTableHolder").innerHTML = `
-    <table><thead><tr><th>ناحیه</th><th>مسئول ناحیه</th><th>تعداد بازاریابی</th><th>مبلغ بازاریابی</th><th>تعداد تراکنش</th></tr></thead>
+    <table><thead><tr><th>ناحیه</th><th>مسئول ناحیه</th><th>تعداد بازاریابی</th><th>مبلغ بازاریابی</th><th>تعداد تراکنش</th><th>TP</th><th>AP</th><th>AT</th></tr></thead>
     <tbody>${regionRows}</tbody></table>`;
 
   // ranking table
@@ -1342,7 +1416,10 @@ const RANK_INDICATORS = [
   {key:"amount", label:"مبلغ بازاریابی", fmt:fmtMoney},
   {key:"count", label:"تعداد بازاریابی", fmt:fmtNum},
   {key:"transactions", label:"تعداد تراکنش", fmt:fmtNum},
-  {key:"gprsBlockedPct", label:"درصد مسدودی GPRS (بیشتر بهتر است)", fmt:v=>v.toFixed(1)+"٪", invert:false},
+  {key:"gprsBlockedPct", label:"درصد مسدودی", fmt:v=>v.toFixed(1)+"٪"},
+  {key:"TP", label:"TP (تراکنش ÷ بازاریابی)", fmt:v=>v.toFixed(2), noPie:true},
+  {key:"AP", label:"AP (مبلغ ÷ بازاریابی)", fmt:fmtMoney, noPie:true},
+  {key:"AT", label:"AT (مبلغ ÷ تراکنش)", fmt:fmtMoney, noPie:true},
 ];
 function renderRankingCharts(ranking){
   const sorted = ranking.slice().sort((a,b)=>b.finalScore-a.finalScore);
@@ -1361,6 +1438,14 @@ function renderRankingCharts(ranking){
   const indDef = RANK_INDICATORS.find(i=>i.key===currentRankIndicator);
   const sortedByInd = ranking.slice().sort((a,b)=> indDef.invert ? a[indDef.key]-b[indDef.key] : b[indDef.key]-a[indDef.key]);
   chartBars("chartRankIndicator", sortedByInd.map(e=>({label:e.employee, value:e[indDef.key]})), {formatter:indDef.fmt, color:"#4472a8"});
+
+  const pieHolder = document.getElementById("rankIndicatorPieHolder");
+  if(indDef.noPie){
+    pieHolder.style.display = "none";
+  }else{
+    pieHolder.style.display = "";
+    chartPie("chartRankIndicatorPie", sortedByInd.map(e=>({label:e.employee, value:Math.max(0,e[indDef.key])})));
+  }
 }
 
 function rankingTableHtml(ranking){
@@ -1376,10 +1461,13 @@ function rankingTableHtml(ranking){
       <td>${fmtMoney(e.amount)}</td>
       <td>${fmtNum(e.transactions)}</td>
       <td>${e.gprsBlockedPct.toFixed(1)}٪</td>
+      <td>${e.TP.toFixed(2)}</td>
+      <td>${fmtMoney(e.AP)}</td>
+      <td>${fmtMoney(e.AT)}</td>
       <td><strong>${e.finalScore}</strong> / 100</td>
     </tr>`;
   }).join("");
-  return `<table><thead><tr><th>رتبه</th><th>کارمند</th><th>ناحیه</th><th>تعداد بازاریابی</th><th>مبلغ بازاریابی</th><th>تعداد تراکنش</th><th>درصد مسدودی GPRS</th><th>امتیاز نهایی</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>رتبه</th><th>کارمند</th><th>ناحیه</th><th>تعداد بازاریابی</th><th>مبلغ بازاریابی</th><th>تعداد تراکنش</th><th>درصد مسدودی</th><th>TP</th><th>AP</th><th>AT</th><th>امتیاز نهایی</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 /* ================= EMPLOYEE DASHBOARD ================= */
@@ -1388,6 +1476,7 @@ function renderMyDashboard(){
   const myFiltered = applyFilters(records, {lockEmployee:true});
   const allFiltered = applyFilters(records); // for averages, ignoring employee lock naturally (no employee filter shown)
   const {totalCount, totalAmount, totalTx} = computeKpis(myFiltered);
+  const myRatios = calcRatios(totalAmount, totalTx, totalCount);
 
   if(records.length===0){
     document.getElementById("myKpis").innerHTML = `<div class="section-card" style="grid-column:1/-1;"><div class="empty-state"><div class="big">📭</div>هنوز داده‌ای برای نمایش وجود ندارد.</div></div>`;
@@ -1396,10 +1485,12 @@ function renderMyDashboard(){
     return;
   }
 
+  const myGprs = computeGprsStatus(myFiltered);
   document.getElementById("myKpis").innerHTML = `
     <div class="kpi-card"><div class="label">تعداد بازاریابی من</div><div class="value">${fmtNum(totalCount)}</div></div>
     <div class="kpi-card"><div class="label">مبلغ بازاریابی من</div><div class="value">${fmtMoney(totalAmount)}</div></div>
     <div class="kpi-card"><div class="label">تعداد تراکنش من</div><div class="value">${fmtNum(totalTx)}</div></div>
+    <div class="kpi-card"><div class="label">درصد مسدودی</div><div class="value">${myGprs.pct.toFixed(1)}٪</div></div>
   `;
 
   // comparison with team average (non-confidential)
@@ -1408,7 +1499,13 @@ function renderMyDashboard(){
   const avgCount = allEmpStats.reduce((s,e)=>s+e.count,0)/n;
   const avgAmount = allEmpStats.reduce((s,e)=>s+e.amount,0)/n;
   const avgTx = allEmpStats.reduce((s,e)=>s+e.transactions,0)/n;
+  const avgRatios = calcRatios(avgAmount, avgTx, avgCount);
 
+  function rankFor(key, higherBetter=true){
+    const sorted = allEmpStats.slice().sort((a,b)=> higherBetter ? b[key]-a[key] : a[key]-b[key]);
+    const idx = sorted.findIndex(e=>e.employee===currentUser.name);
+    return idx>=0 ? (idx+1) : null;
+  }
   function diffPill(mine, avg){
     const diff = mine - avg;
     const pct = avg ? (diff/avg*100) : 0;
@@ -1416,25 +1513,37 @@ function renderMyDashboard(){
     const sign = diff>=0 ? "+":"";
     return `<span class="pill ${cls}">${sign}${pct.toFixed(1)}٪ نسبت به میانگین</span>`;
   }
+  function rankCell(key, higherBetter=true){
+    const r = rankFor(key, higherBetter);
+    return r ? `${r} از ${n}` : "—";
+  }
   document.getElementById("myComparisonBox").innerHTML = `
     <table>
-      <thead><tr><th>شاخص</th><th>من</th><th>میانگین کل</th><th>وضعیت</th></tr></thead>
+      <thead><tr><th>شاخص</th><th>من</th><th>میانگین کل</th><th>وضعیت</th><th>رتبه</th></tr></thead>
       <tbody>
-        <tr><td>تعداد بازاریابی</td><td>${fmtNum(totalCount)}</td><td>${fmtNum(avgCount.toFixed(1))}</td><td>${diffPill(totalCount,avgCount)}</td></tr>
-        <tr><td>مبلغ بازاریابی</td><td>${fmtMoney(totalAmount)}</td><td>${fmtMoney(avgAmount.toFixed(0))}</td><td>${diffPill(totalAmount,avgAmount)}</td></tr>
-        <tr><td>تعداد تراکنش</td><td>${fmtNum(totalTx)}</td><td>${fmtNum(avgTx.toFixed(1))}</td><td>${diffPill(totalTx,avgTx)}</td></tr>
+        <tr><td>تعداد بازاریابی</td><td>${fmtNum(totalCount)}</td><td>${fmtNum(avgCount.toFixed(1))}</td><td>${diffPill(totalCount,avgCount)}</td><td>${rankCell("count")}</td></tr>
+        <tr><td>مبلغ بازاریابی</td><td>${fmtMoney(totalAmount)}</td><td>${fmtMoney(avgAmount.toFixed(0))}</td><td>${diffPill(totalAmount,avgAmount)}</td><td>${rankCell("amount")}</td></tr>
+        <tr><td>تعداد تراکنش</td><td>${fmtNum(totalTx)}</td><td>${fmtNum(avgTx.toFixed(1))}</td><td>${diffPill(totalTx,avgTx)}</td><td>${rankCell("transactions")}</td></tr>
+        <tr><td>TP (تراکنش÷بازاریابی)</td><td>${myRatios.TP.toFixed(2)}</td><td>${avgRatios.TP.toFixed(2)}</td><td>${diffPill(myRatios.TP,avgRatios.TP)}</td><td>${rankCell("TP")}</td></tr>
+        <tr><td>AP (مبلغ÷بازاریابی)</td><td>${fmtMoney(myRatios.AP)}</td><td>${fmtMoney(avgRatios.AP)}</td><td>${diffPill(myRatios.AP,avgRatios.AP)}</td><td>${rankCell("AP")}</td></tr>
+        <tr><td>AT (مبلغ÷تراکنش)</td><td>${fmtMoney(myRatios.AT)}</td><td>${fmtMoney(avgRatios.AT)}</td><td>${diffPill(myRatios.AT,avgRatios.AT)}</td><td>${rankCell("AT")}</td></tr>
       </tbody>
     </table>`;
+
+  // channel breakdown pie
+  const myChannels = computeChannelBreakdown(myFiltered);
+  chartPie("myChannelChart", myChannels.map(c=>({label:c.channel, value:c.count})));
 
   // rank (no confidential details of others)
   const ranking = computeRanking(allFiltered);
   const mine = ranking.find(e=>e.employee===currentUser.name);
   if(mine){
+    const regionManager = REGIONS[mine.region] ? REGIONS[mine.region].manager : "";
     document.getElementById("myRankBox").innerHTML = `
       <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
         <div class="kpi-card"><div class="label">رتبه شما</div><div class="value">${mine.rank} از ${ranking.length}</div></div>
         <div class="kpi-card"><div class="label">امتیاز نهایی</div><div class="value">${mine.finalScore} / 100</div></div>
-        <div class="kpi-card"><div class="label">ناحیه</div><div class="value" style="font-size:16px;">${mine.region}</div></div>
+        <div class="kpi-card"><div class="label">ناحیه</div><div class="value" style="font-size:16px;">${mine.region}</div><div class="sub">مسئول ناحیه: ${regionManager}</div></div>
       </div>`;
   }else{
     document.getElementById("myRankBox").innerHTML = `<div class="empty-state">داده‌ای برای محاسبه رتبه شما در بازه انتخاب‌شده موجود نیست.</div>`;
@@ -1444,7 +1553,23 @@ function renderMyDashboard(){
   const mySector = groupByField(myFiltered, "sector").slice(0,8);
   chartBars("myBankBreakdown", myBank.map(b=>({label:b.value, value:b.amount})), {formatter:fmtMoney, color:"#4472a8"});
   chartBars("mySectorBreakdown", mySector.map(b=>({label:b.value, value:b.amount})), {formatter:fmtMoney, color:"#2e7d5b"});
+}
 
+/* ================= EMPLOYEE TREND VIEW ================= */
+let myTrendCompareEmployee = "";
+function renderMyTrendView(){
+  const myFiltered = applyFilters(records, {lockEmployee:true});
+  const {totalCount, totalAmount, totalTx} = computeKpis(myFiltered);
+  const r = calcRatios(totalAmount, totalTx, totalCount);
+  document.getElementById("myTrendKpis").innerHTML = `
+    <div class="kpi-card"><div class="label">TP (تراکنش÷بازاریابی)</div><div class="value">${r.TP.toFixed(2)}</div></div>
+    <div class="kpi-card"><div class="label">AP (مبلغ÷بازاریابی)</div><div class="value" style="font-size:16px;">${fmtMoney(r.AP)}</div></div>
+    <div class="kpi-card"><div class="label">AT (مبلغ÷تراکنش)</div><div class="value" style="font-size:16px;">${fmtMoney(r.AT)}</div></div>
+  `;
+  const sel = document.getElementById("myTrendCompareSelect");
+  const others = EMPLOYEES.map(e=>e.name).filter(n=>n!==currentUser.name);
+  sel.innerHTML = `<option value="">— بدون مقایسه —</option>` + others.map(n=>`<option value="${n}" ${n===myTrendCompareEmployee?"selected":""}>${n}</option>`).join("");
+  sel.onchange = ()=>{ myTrendCompareEmployee = sel.value; renderMyTrendChart(); };
   renderMyTrendPills();
   renderMyTrendChart();
 }
@@ -1475,15 +1600,19 @@ function renderMyTrendPills(){
   });
 }
 function renderMyTrendChart(){
-  const myRecs = applyFilters(records, {lockEmployee:true});
-  const {labels, dataMap} = buildTrendSeries(myRecs, myTrendMode, [currentUser.name], myTrendIndicator);
+  const allRecs = applyFilters(records);
+  const employeeList = [currentUser.name, myTrendCompareEmployee].filter(Boolean);
+  const {labels, dataMap} = buildTrendSeries(allRecs, myTrendMode, employeeList, myTrendIndicator);
   const indDef = TREND_INDICATORS.find(i=>i.key===myTrendIndicator);
-  chartLine("myTrendChart", labels, [{name:indDef.label, values: dataMap[currentUser.name]||[], color:"#1e3a5f"}]);
+  const series = [{name:currentUser.name, values: dataMap[currentUser.name]||[], color:"#1e3a5f"}];
+  if(myTrendCompareEmployee){
+    series.push({name:myTrendCompareEmployee, values: dataMap[myTrendCompareEmployee]||[], color:"#c0392b"});
+  }
+  chartLine("myTrendChart", labels, series);
 }
 
 /* ================= TREND (manager) ================= */
 function renderTrendView(){
-  buildFilterBar("trendFiltersHolder");
   renderTrendPills();
   const picker = document.getElementById("trendEmployeePicker");
   picker.innerHTML = "";
@@ -1701,22 +1830,29 @@ function addWeightRow(){
 }
 
 /* ================= REGIONS VIEW (manager only) ================= */
+let currentRegionPieIndicator = "amount";
+const REGION_PIE_INDICATORS = [
+  {key:"amount", label:"مبلغ بازاریابی"},
+  {key:"count", label:"تعداد بازاریابی"},
+  {key:"transactions", label:"تعداد تراکنش"},
+];
 function renderRegionsView(){
-  buildFilterBar("regionsFiltersHolder");
+  buildFilterBar("regionsFiltersHolder", {excludeKeys:["employees","banks","sectors","channels"]});
   const filtered = applyFilters(records);
   const ranking = computeRegionRanking(filtered);
-  const query = (document.getElementById("regionSearchInput").value||"").trim();
   const rows = ranking.map(r=>{
-    const highlight = query && r.region.includes(query);
     let badgeClass = r.rank===1?"gold":r.rank===2?"silver":r.rank===3?"bronze":"";
-    return `<tr style="${highlight?'background:var(--navy-pale);':''}">
+    return `<tr>
       <td><span class="rank-badge ${badgeClass}">${r.rank}</span></td>
-      <td>${r.region}${highlight?' <span class="pill good">مطابق جستجو</span>':''}</td>
+      <td>${r.region}</td>
       <td>${r.manager}</td>
       <td>${fmtNum(r.employeeCount)}</td>
       <td>${fmtMoney(r.amount)}<div style="color:var(--muted);font-size:11px;">هدف: ${fmtMoney(r.targetAmount)} — ${r.achAmountAdj.toFixed(1)}٪ تحقق (با ضریب)</div></td>
       <td>${fmtNum(r.transactions)}<div style="color:var(--muted);font-size:11px;">هدف: ${fmtNum(r.targetTransactions)} — ${r.achTransactionsAdj.toFixed(1)}٪ تحقق (با ضریب)</div></td>
       <td>${fmtNum(r.count)}<div style="color:var(--muted);font-size:11px;">هدف: ${fmtNum(r.targetCount)} — ${r.achCountAdj.toFixed(1)}٪ تحقق (با ضریب)</div></td>
+      <td>${r.TP.toFixed(2)}</td>
+      <td>${fmtMoney(r.AP)}</td>
+      <td>${fmtMoney(r.AT)}</td>
       <td>${r.dispersionCoef} × ${r.staffCoef}</td>
       <td><strong>${r.finalScore.toFixed(1)}٪</strong></td>
       <td>رتبه ${r.rankRaw} — <strong>${r.scoreRaw.toFixed(1)}٪</strong></td>
@@ -1724,42 +1860,55 @@ function renderRegionsView(){
   }).join("");
   document.getElementById("regionsTableHolder").innerHTML = `
     <table><thead><tr>
-      <th>رتبه</th><th>ناحیه</th><th>مسئول</th><th>تعداد کارکنان</th><th>مبلغ بازاریابی (واقعی / هدف)</th><th>تعداد تراکنش (واقعی / هدف)</th><th>تعداد بازاریابی (واقعی / هدف)</th><th>ضریب پراکندگی × کارکنان</th><th>امتیاز نهایی (با ضریب)</th><th>رتبه و امتیاز بدون ضریب</th>
+      <th>رتبه</th><th>ناحیه</th><th>مسئول</th><th>تعداد کارکنان</th><th>مبلغ بازاریابی (واقعی / هدف)</th><th>تعداد تراکنش (واقعی / هدف)</th><th>تعداد بازاریابی (واقعی / هدف)</th><th>TP</th><th>AP</th><th>AT</th><th>ضریب پراکندگی × کارکنان</th><th>امتیاز نهایی (با ضریب)</th><th>رتبه و امتیاز بدون ضریب</th>
     </tr></thead><tbody>${rows}</tbody></table>
-    <p class="small-note">هدف تغییر نمی‌کند: به ازای هر کارمند در ماه، ۴۰ مورد بازاریابی، ۱۰۰ میلیارد ریال مبلغ، و ۱۰,۰۰۰ تراکنش. عدد واقعی هر ناحیه مستقیم با همین هدف مقایسه می‌شود؛ ضریب پراکندگی و تعداد کارکنان فقط در انتهای محاسبه — روی عدد واقعی، نه روی هدف — ضرب می‌شود تا درصد تحقق «با ضریب» به‌دست بیاید. رتبه‌بندی و امتیاز رسمی (ستون‌های میانی) بر همین مبنای «با ضریب» است؛ ستون آخر همان محاسبه را بدون اعمال ضریب، فقط برای مقایسه، نشان می‌دهد.</p>`;
-  chartBars("chartRegions", ranking.map(r=>({label:r.region, value:r.finalScore})), {formatter:v=>v.toFixed(1)+"٪", color:"#1e3a5f"});
+    <p class="small-note">هدف تغییر نمی‌کند: به ازای هر کارمند در ماه، ۴۰ مورد بازاریابی، ۱۰۰ میلیارد ریال مبلغ، و ۱۰,۰۰۰ تراکنش. عدد واقعی هر ناحیه مستقیم با همین هدف مقایسه می‌شود؛ ضریب پراکندگی و تعداد کارکنان فقط در انتهای محاسبه — روی عدد واقعی، نه روی هدف — ضرب می‌شود تا درصد تحقق «با ضریب» به‌دست بیاید.</p>`;
+  chartBars("chartRegions", ranking.slice().sort((a,b)=>b.finalScore-a.finalScore).map(r=>({label:r.region, value:r.finalScore})), {formatter:v=>v.toFixed(1)+"٪", color:"#1e3a5f"});
+
+  const pillHolder = document.getElementById("regionPieIndicatorPills");
+  pillHolder.innerHTML = "";
+  REGION_PIE_INDICATORS.forEach(ind=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (currentRegionPieIndicator===ind.key ? " active":"");
+    b.textContent = ind.label;
+    b.onclick = ()=>{ currentRegionPieIndicator = ind.key; renderRegionsView(); };
+    pillHolder.appendChild(b);
+  });
+  chartPie("chartRegionsPie", ranking.map(r=>({label:r.region, value:Math.max(0,r[currentRegionPieIndicator])})));
 }
 
 /* ================= BANKS / SECTORS VIEWS (manager only) ================= */
 let selectedBanks = new Set();
-let selectedSectors = new Set();
 function renderFieldPerformanceView(field, opts){
-  buildFilterBar(opts.filtersHolderId);
+  buildFilterBar(opts.filtersHolderId, opts.filterOpts || {});
   const filtered = applyFilters(records);
-  const allGroups = groupByField(filtered, field);
+  const allGroups = groupByField(filtered, field); // already sorted desc by amount
   const totalAmount = allGroups.reduce((s,g)=>s+g.amount,0) || 1;
   const totalCount = allGroups.reduce((s,g)=>s+g.storeCount,0) || 1;
   const totalTx = allGroups.reduce((s,g)=>s+g.transactions,0) || 1;
 
-  const pickerEl = document.getElementById(opts.pickerId);
-  pickerEl.innerHTML = "";
-  const allBtn = document.createElement("button");
-  allBtn.className = "tab-pill" + (opts.selectedSet.size===0 ? " active":"");
-  allBtn.textContent = "همه";
-  allBtn.onclick = ()=>{ opts.selectedSet.clear(); opts.renderFn(); };
-  pickerEl.appendChild(allBtn);
-  allGroups.forEach(g=>{
-    const b = document.createElement("button");
-    b.className = "tab-pill" + (opts.selectedSet.has(g.value) ? " active":"");
-    b.textContent = g.value;
-    b.onclick = ()=>{
-      if(opts.selectedSet.has(g.value)) opts.selectedSet.delete(g.value); else opts.selectedSet.add(g.value);
-      opts.renderFn();
-    };
-    pickerEl.appendChild(b);
-  });
+  let shown = allGroups;
+  if(!opts.noPicker){
+    const pickerEl = document.getElementById(opts.pickerId);
+    pickerEl.innerHTML = "";
+    const allBtn = document.createElement("button");
+    allBtn.className = "tab-pill" + (opts.selectedSet.size===0 ? " active":"");
+    allBtn.textContent = "همه";
+    allBtn.onclick = ()=>{ opts.selectedSet.clear(); opts.renderFn(); };
+    pickerEl.appendChild(allBtn);
+    allGroups.forEach(g=>{
+      const b = document.createElement("button");
+      b.className = "tab-pill" + (opts.selectedSet.has(g.value) ? " active":"");
+      b.textContent = g.value;
+      b.onclick = ()=>{
+        if(opts.selectedSet.has(g.value)) opts.selectedSet.delete(g.value); else opts.selectedSet.add(g.value);
+        opts.renderFn();
+      };
+      pickerEl.appendChild(b);
+    });
+    shown = opts.selectedSet.size ? allGroups.filter(g=>opts.selectedSet.has(g.value)) : allGroups;
+  }
 
-  const shown = opts.selectedSet.size ? allGroups.filter(g=>opts.selectedSet.has(g.value)) : allGroups;
   if(shown.length===0){
     document.getElementById(opts.tableHolderId).innerHTML = `<div class="empty-state">داده‌ای موجود نیست.</div>`;
     chartBars(opts.chartAmountId, []); chartBars(opts.chartCountId, []); chartBars(opts.chartTxId, []);
@@ -1771,20 +1920,23 @@ function renderFieldPerformanceView(field, opts){
       <td>${fmtNum(g.storeCount)} <span style="color:var(--muted);font-size:11.5px;">(${(g.storeCount/totalCount*100).toFixed(1)}٪)</span></td>
       <td>${fmtMoney(g.amount)} <span style="color:var(--muted);font-size:11.5px;">(${(g.amount/totalAmount*100).toFixed(1)}٪)</span></td>
       <td>${fmtNum(g.transactions)} <span style="color:var(--muted);font-size:11.5px;">(${(g.transactions/totalTx*100).toFixed(1)}٪)</span></td>
+      <td>${g.TP.toFixed(2)}</td>
+      <td>${fmtMoney(g.AP)}</td>
+      <td>${fmtMoney(g.AT)}</td>
     </tr>`).join("");
   document.getElementById(opts.tableHolderId).innerHTML = `
-    <table><thead><tr><th>${opts.label}</th><th>تعداد بازاریابی (سهم از کل)</th><th>مبلغ بازاریابی (سهم از کل)</th><th>تعداد تراکنش (سهم از کل)</th></tr></thead>
+    <table><thead><tr><th>${opts.label}</th><th>تعداد بازاریابی (سهم از کل)</th><th>مبلغ بازاریابی (سهم از کل)</th><th>تعداد تراکنش (سهم از کل)</th><th>TP</th><th>AP</th><th>AT</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
   const top = shown.slice().sort((a,b)=>b.amount-a.amount).slice(0,15);
   chartBars(opts.chartAmountId, top.map(g=>({label:g.value, value:g.amount})), {formatter:fmtMoney, color:"#1e3a5f"});
-  chartBars(opts.chartCountId, top.map(g=>({label:g.value, value:g.storeCount})), {formatter:fmtNum, color:"#4472a8"});
-  chartBars(opts.chartTxId, top.map(g=>({label:g.value, value:g.transactions})), {formatter:fmtNum, color:"#2e7d5b"});
+  chartBars(opts.chartCountId, top.slice().sort((a,b)=>b.storeCount-a.storeCount).map(g=>({label:g.value, value:g.storeCount})), {formatter:fmtNum, color:"#4472a8"});
+  chartBars(opts.chartTxId, top.slice().sort((a,b)=>b.transactions-a.transactions).map(g=>({label:g.value, value:g.transactions})), {formatter:fmtNum, color:"#2e7d5b"});
 }
 function renderBanksView(){
   renderFieldPerformanceView("bank", {filtersHolderId:"banksFiltersHolder", pickerId:"bankPicker", tableHolderId:"banksTableHolder", chartAmountId:"chartBanksAmount", chartCountId:"chartBanksCount", chartTxId:"chartBanksTx", label:"بانک", selectedSet:selectedBanks, renderFn:renderBanksView});
 }
 function renderSectorsView(){
-  renderFieldPerformanceView("sector", {filtersHolderId:"sectorsFiltersHolder", pickerId:"sectorPicker", tableHolderId:"sectorsTableHolder", chartAmountId:"chartSectorsAmount", chartCountId:"chartSectorsCount", chartTxId:"chartSectorsTx", label:"صنف", selectedSet:selectedSectors, renderFn:renderSectorsView});
+  renderFieldPerformanceView("sector", {filtersHolderId:"sectorsFiltersHolder", noPicker:true, filterOpts:{excludeKeys:["sectors"]}, tableHolderId:"sectorsTableHolder", chartAmountId:"chartSectorsAmount", chartCountId:"chartSectorsCount", chartTxId:"chartSectorsTx", label:"صنف", renderFn:renderSectorsView});
 }
 
 /* ================= SEARCH ================= */
@@ -1828,7 +1980,7 @@ function runSearch(){
   });
   Object.keys(REGIONS).forEach(r=>{
     if(r.includes(q) && currentUser.role==="manager"){
-      results.push({label:"ناحیه: "+r, action:()=>{ box.classList.remove("open"); switchTab("regions"); document.getElementById("regionSearchInput").value = r; renderRegionsView(); }});
+      results.push({label:"ناحیه: "+r, action:()=>{ box.classList.remove("open"); switchTab("regions"); }});
     }
   });
   availableValues("month").forEach(m=>{
@@ -1846,7 +1998,7 @@ function runSearch(){
       if(g.value.includes(q)) results.push({label:"بانک: "+g.value, action:()=>{ box.classList.remove("open"); selectedBanks=new Set([g.value]); switchTab("banks"); }});
     });
     groupByField(applyFilters(records), "sector").forEach(g=>{
-      if(g.value.includes(q)) results.push({label:"صنف: "+g.value, action:()=>{ box.classList.remove("open"); selectedSectors=new Set([g.value]); switchTab("sectors"); }});
+      if(g.value.includes(q)) results.push({label:"صنف: "+g.value, action:()=>{ box.classList.remove("open"); filters.sectors=new Set([g.value]); switchTab("sectors"); }});
     });
   }
   box.classList.add("open");
