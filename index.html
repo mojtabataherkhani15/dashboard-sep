@@ -582,6 +582,7 @@ const QUARTER_NAMES = ["بهار","تابستان","پاییز","زمستان"];
 
 const REQUIRED_FIELDS = [
   {key:"store", label:"نام فروشگاه", required:true},
+  {key:"recordId", label:"شناسه یکتای رکورد (برای شمارش دقیق)", required:false},
   {key:"terminalStatus", label:"وضعیت ترمینال", required:true},
   {key:"installMonth", label:"ماه نصب", required:true},
   {key:"amount", label:"مبلغ بازاریابی", required:true},
@@ -600,6 +601,7 @@ const REQUIRED_FIELDS = [
 // (e.g. "سرجمع خرید فروردین" / "تعداد تراکنش فروردین" ... repeated per month)
 const WIDE_BASE_FIELDS = [
   {key:"store", label:"نام فروشگاه", required:true},
+  {key:"recordId", label:"شناسه یکتای رکورد (برای شمارش دقیق)", required:false},
   {key:"terminalStatus", label:"وضعیت ترمینال", required:true},
   {key:"installMonth", label:"ماه نصب", required:true},
   {key:"channel", label:"بستر ارتباطی", required:true},
@@ -1095,6 +1097,7 @@ function applyFilters(recs, opts={}){
 
 /* ================= KPI CALCS ================= */
 function installedOnly(recs){ return recs; } // no hardcoded status — the وضعیت ترمینال filter (applied upstream via applyFilters) controls this now
+function uniqueKey(r){ return r.recordId || r.store; } // شناسه column is near-100% unique; store names can legitimately repeat across different terminals
 function calcRatios(amount, transactions, count){
   return {
     TP: count ? transactions/count : 0,       // تعداد تراکنش ÷ تعداد بازاریابی
@@ -1105,7 +1108,7 @@ function calcRatios(amount, transactions, count){
 
 function computeKpis(recs){
   const inst = recs;
-  const storeSet = new Set(inst.map(r=>r.store));
+  const storeSet = new Set(inst.map(uniqueKey));
   const totalCount = storeSet.size;
   const totalAmount = inst.filter(passesOutputMonthForAmount).reduce((s,r)=>s+(Number(r.amount)||0),0);
   const totalTx = inst.filter(passesOutputMonthForTx).reduce((s,r)=>s+(Number(r.transactions)||0),0);
@@ -1202,8 +1205,9 @@ function chartLine(containerId, labels, series, opts={}){
 function computeChannelBreakdown(recs){
   const seen = new Set();
   const inst = installedOnly(recs).filter(r=>{
-    if(seen.has(r.store)) return false;
-    seen.add(r.store);
+    const k = uniqueKey(r);
+    if(seen.has(k)) return false;
+    seen.add(k);
     return true;
   });
   const map = {};
@@ -1212,12 +1216,13 @@ function computeChannelBreakdown(recs){
   return Object.entries(map).map(([channel,count])=>({channel,count,pct: (count/total*100)})).sort((a,b)=>b.count-a.count);
 }
 function computeGprsStatus(recs){
-  // De-duplicate to one row per store so multi-month melted records aren't counted repeatedly
+  // De-duplicate to one row per terminal so multi-month melted records aren't counted repeatedly
   const seen = new Set();
   const gprsRecs = installedOnly(recs).filter(r=>{
     if(!(r.channel||"").toUpperCase().includes("GPRS")) return false;
-    if(seen.has(r.store)) return false;
-    seen.add(r.store);
+    const k = uniqueKey(r);
+    if(seen.has(k)) return false;
+    seen.add(k);
     return true;
   });
   const total = gprsRecs.length;
@@ -1233,11 +1238,11 @@ function employeeStatsList(recs){
     const e = r.employee || "نامشخص";
     if(!byEmp[e]) byEmp[e] = {employee:e, region:regionOfEmployee(e), count:new Set(), amount:0, transactions:0, gprsTotal:0, gprsBlocked:0};
     if(!gprsSeenPerEmp[e]) gprsSeenPerEmp[e] = new Set();
-    byEmp[e].count.add(r.store);
+    byEmp[e].count.add(uniqueKey(r));
     if(passesOutputMonthForAmount(r)) byEmp[e].amount += Number(r.amount)||0;
     if(passesOutputMonthForTx(r)) byEmp[e].transactions += Number(r.transactions)||0;
-    if((r.channel||"").toUpperCase().includes("GPRS") && !gprsSeenPerEmp[e].has(r.store)){
-      gprsSeenPerEmp[e].add(r.store);
+    if((r.channel||"").toUpperCase().includes("GPRS") && !gprsSeenPerEmp[e].has(uniqueKey(r))){
+      gprsSeenPerEmp[e].add(uniqueKey(r));
       byEmp[e].gprsTotal++;
       if(isBlockedVal(r.blockedStatus)) byEmp[e].gprsBlocked++;
     }
@@ -1270,7 +1275,7 @@ function groupByField(recs, field){
     if(!map[key]){ map[key] = {value:key, storeCount:0, amount:0, transactions:0}; seenStores[key] = new Set(); }
     if(passesOutputMonthForAmount(r)) map[key].amount += Number(r.amount)||0;
     if(passesOutputMonthForTx(r)) map[key].transactions += Number(r.transactions)||0;
-    if(!seenStores[key].has(r.store)){ seenStores[key].add(r.store); map[key].storeCount++; }
+    if(!seenStores[key].has(uniqueKey(r))){ seenStores[key].add(uniqueKey(r)); map[key].storeCount++; }
   });
   return Object.values(map).map(g=>({...g, ...calcRatios(g.amount, g.transactions, g.storeCount)})).sort((a,b)=>b.amount-a.amount);
 }
@@ -1292,7 +1297,7 @@ function computeRegionRanking(recs){
     const regionRecs = inst.filter(r=>regionOfEmployee(r.employee)===rname);
     const amount = regionRecs.filter(passesOutputMonthForAmount).reduce((s,r)=>s+(Number(r.amount)||0),0);
     const transactions = regionRecs.filter(passesOutputMonthForTx).reduce((s,r)=>s+(Number(r.transactions)||0),0);
-    const count = new Set(regionRecs.map(r=>r.store)).size;
+    const count = new Set(regionRecs.map(uniqueKey)).size;
     const employeeCount = REGIONS[rname].members.length;
     const coef = REGION_COEFFICIENTS[rname];
     const factor = coef.dispersion * coef.staff;
@@ -1662,7 +1667,7 @@ function buildTrendSeries(recs, mode, employeeList, indicator){
         if(!employeeList.includes(r.employee)) return;
         const qi = QUARTER_OF_MONTH[r.installMonth];
         if(qi===undefined) return;
-        setMap[r.employee][qi].add(r.store);
+        setMap[r.employee][qi].add(uniqueKey(r));
       });
       const dataMap = {}; employeeList.forEach(e=> dataMap[e]=setMap[e].map(s=>s.size));
       return {labels, dataMap};
@@ -1675,7 +1680,7 @@ function buildTrendSeries(recs, mode, employeeList, indicator){
       if(!employeeList.includes(r.employee)) return;
       const idx = orderedMonths.indexOf(r.installMonth);
       if(idx<0) return;
-      setMap[r.employee][idx].add(r.store);
+      setMap[r.employee][idx].add(uniqueKey(r));
     });
     const dataMap = {}; employeeList.forEach(e=> dataMap[e]=setMap[e].map(s=>s.size));
     return {labels:orderedMonths, dataMap};
@@ -1724,7 +1729,7 @@ function computeReturnRecords(recs, opts={}){
   return recs.filter(r=>{
     if(!RETURN_STATUSES.includes(r.terminalStatus)) return false;
     if(opts.lockEmployee && r.employee !== currentUser.name) return false;
-    const key = r.store + "|" + r.employee;
+    const key = uniqueKey(r) + "|" + r.employee;
     if(seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -2215,6 +2220,7 @@ function parseCsv(text){
 
 const FIELD_GUESS_HINTS = {
   store: ["نام فروشگاه"],
+  recordId: ["شناسه"],
   terminalStatus: ["وضعیت ترمینال"],
   installMonth: ["ماه نصب"],
   amount: ["مبلغ بازاریابی","سرجمع خرید","سرجمع مبلغ"],
@@ -2354,6 +2360,7 @@ async function confirmMapping(){
       if(!store) return;
       const base = {
         store,
+        recordId: mapping.recordId ? String(row[mapping.recordId]||"").trim() : "",
         terminalStatus: String(row[mapping.terminalStatus]||"").trim(),
         installMonth: String(row[mapping.installMonth]||"").trim(),
         channel: String(row[mapping.channel]||"").trim(),
@@ -2375,6 +2382,7 @@ async function confirmMapping(){
   }else{
     newRecords = rawSheetRows.map(row=>({
       store: String(row[mapping.store]||"").trim(),
+      recordId: mapping.recordId ? String(row[mapping.recordId]||"").trim() : "",
       terminalStatus: String(row[mapping.terminalStatus]||"").trim(),
       installMonth: String(row[mapping.installMonth]||"").trim(),
       amount: Number(row[mapping.amount])||0,
@@ -2395,9 +2403,12 @@ async function confirmMapping(){
   const saved = await supaSetAppData("performance_records", newRecords);
   if(saved){
     records = newRecords;
-    filters = { months:new Set(), employees:new Set(), regions:new Set(), channels:new Set(), banks:new Set(), outputMonths:new Set() };
-    const storeCount = new Set(records.map(r=>r.store)).size;
-    document.getElementById("mappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${storeCount} فروشگاه (${records.length} رکورد پردازش‌شده) با موفقیت در پایگاه‌داده مشترک ذخیره شد و برای همه کاربران در دسترس است.</span>`;
+    filters = {
+      months:new Set(), employees:new Set(), regions:new Set(), banks:new Set(), sectors:new Set(),
+      channels:new Set(), terminalStatuses:new Set(), outputMonthsAmount:new Set(), outputMonthsTx:new Set(),
+    };
+    const storeCount = new Set(records.map(uniqueKey)).size;
+    document.getElementById("mappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${storeCount} مورد (${records.length} رکورد پردازش‌شده) با موفقیت در پایگاه‌داده مشترک ذخیره شد و برای همه کاربران در دسترس است.</span>`;
     setTimeout(()=>{ document.getElementById("mappingCard").classList.add("hidden"); document.getElementById("excelInput").value=""; }, 1400);
   }else{
     document.getElementById("mappingMsg").innerHTML = `<span style="color:var(--warn);">⚠ داده پردازش شد اما ذخیره در پایگاه‌داده مشترک ناموفق بود — اتصال به Supabase را بررسی کنید. داده فقط در همین صفحه (تا رفرش بعدی) نمایش داده می‌شود.</span>`;
