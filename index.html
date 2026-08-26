@@ -1094,7 +1094,7 @@ function applyFilters(recs, opts={}){
 }
 
 /* ================= KPI CALCS ================= */
-function installedOnly(recs){ return recs.filter(r=> (r.terminalStatus||"").trim()==="نصب شده"); }
+function installedOnly(recs){ return recs; } // no hardcoded status — the وضعیت ترمینال filter (applied upstream via applyFilters) controls this now
 function calcRatios(amount, transactions, count){
   return {
     TP: count ? transactions/count : 0,       // تعداد تراکنش ÷ تعداد بازاریابی
@@ -1104,7 +1104,7 @@ function calcRatios(amount, transactions, count){
 }
 
 function computeKpis(recs){
-  const inst = installedOnly(recs);
+  const inst = recs;
   const storeSet = new Set(inst.map(r=>r.store));
   const totalCount = storeSet.size;
   const totalAmount = inst.filter(passesOutputMonthForAmount).reduce((s,r)=>s+(Number(r.amount)||0),0);
