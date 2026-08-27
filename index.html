@@ -266,7 +266,9 @@ tbody tr:hover{background:var(--navy-pale-2);}
      forcing the whole table wider than necessary */
   td:first-child, th:first-child{white-space:normal;max-width:120px;overflow-wrap:break-word;word-break:break-word;}
 
-  .grid-2{gap:12px;}
+  .grid-2{gap:12px;min-width:0;}
+  .grid-2 > *{min-width:0;} /* grid items default to min-width:auto, which stops wide tables from scrolling and pushes the whole page instead */
+  .section-card{min-width:0;}
   .chart-wrap{min-height:auto;}
   svg{max-width:100%;}
 
