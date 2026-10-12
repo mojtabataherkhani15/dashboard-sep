@@ -181,6 +181,11 @@ tbody tr:hover{background:var(--navy-pale-2);}
 .weight-total.bad{background:#fbe9e7;color:var(--warn);}
 
 .msg-item{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--navy-pale-2);}
+.pm-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.pm-mini-card{border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--navy-pale-2);font-size:11.5px;line-height:1.7;}
+.pm-mini-card b{display:block;color:var(--navy);font-size:12px;margin-bottom:2px;}
+@media(max-width:900px){.pm-mini-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.pm-mini-grid{grid-template-columns:1fr;}}
 .msg-item .msg-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
 .msg-item .msg-type{font-weight:700;font-size:11.5px;padding:2px 9px;border-radius:14px;}
 .msg-item p{margin:0;font-size:13.5px;line-height:1.8;}
@@ -230,6 +235,22 @@ tbody tr:hover{background:var(--navy-pale-2);}
 .tab-sub-btn.active{background:var(--navy-pale);color:var(--navy);font-weight:700;}
 .tab-cat-btn.has-active{color:var(--navy);border-bottom-color:var(--navy);}
 
+/* horizontal sub-tab chip row (e.g. under "بازاریابی") */
+.subtabs-bar{
+  display:none;gap:8px;padding:10px 24px;background:var(--navy-pale-2);border-bottom:1px solid var(--border);
+  overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;
+}
+.subtabs-bar.show{display:flex;}
+.subtab-chip{
+  flex:none;padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
+  font-size:12.5px;font-weight:700;color:var(--muted);transition:.15s;
+}
+.subtab-chip:hover{border-color:var(--navy-lighter);color:var(--navy);}
+.subtab-chip.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.subtabs-bar.level2{background:#fff;padding-top:7px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+.subtabs-bar.level2 .subtab-chip{padding:6px 13px;font-size:11.5px;}
+.subtabs-bar.level2 .subtab-chip.active{background:var(--navy-lighter);border-color:var(--navy-lighter);}
+
 /* ========== MOBILE RESPONSIVE — only applies under 768px, desktop is untouched ========== */
 @media (max-width: 768px){
   html, body{overflow-x:hidden;}
@@ -240,6 +261,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
   .global-search-bar{padding:10px 12px;}
   .search-wrap{max-width:100%;}
   .tabs{padding:0 10px;}
+  .subtabs-bar{padding:8px 12px;gap:6px;}
+  .subtab-chip{padding:7px 12px;font-size:11.5px;}
   .tab-btn, .tab-cat-btn{padding:11px 10px;font-size:12px;}
   .tab-submenu{min-width:170px;max-width:calc(100vw - 20px);}
 
@@ -329,6 +352,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
   </div>
 
   <div class="tabs" id="tabsBar"></div>
+  <div class="subtabs-bar" id="subtabsBar"></div>
+  <div class="subtabs-bar level2" id="subtabsBar2"></div>
   <div id="storageWarningBanner" class="notice" style="display:none;margin:14px 24px 0;"></div>
   <div style="padding:0 24px;">
     <span id="liveUpdateNotice" class="pill good" style="display:none;margin-top:10px;"></span>
@@ -409,7 +434,6 @@ tbody tr:hover{background:var(--navy-pale-2);}
 
     <!-- ---- EMPLOYEE TREND VIEW ---- -->
     <div class="view" id="view-mytrend">
-      <div id="myTrendKpis" class="kpi-grid"></div>
       <div class="section-card">
         <h3>روند عملکرد</h3>
         <div class="tab-pill-group" id="myTrendModePills"></div>
@@ -479,6 +503,66 @@ tbody tr:hover{background:var(--navy-pale-2);}
         <div class="tab-pill-group" id="regionPieIndicatorPills"></div>
         <div class="chart-wrap"><div id="chartRegionsPie"></div></div>
       </div>
+      <div class="section-card">
+        <h3>عملکرد PM نواحی</h3>
+        <p class="small-note">تعداد PM هر ناحیه، درصد انجام (موفق) و تعداد مانده (آماده پشتیبانی) — رتبه‌بندی‌شده بر اساس درصد انجام.</p>
+        <div id="pmRegionTableHolder"></div>
+      </div>
+      <div class="section-card">
+        <h3>نمودار درصد انجام PM به تفکیک ناحیه</h3>
+        <div class="chart-wrap"><div id="chartPmRegions"></div></div>
+      </div>
+      <div class="section-card">
+        <h3>عملکرد جمع‌آوری نواحی</h3>
+        <p class="small-note">تعداد جمع‌آوری هر ناحیه، درصد انجام و تعداد مانده — رتبه‌بندی‌شده بر اساس درصد انجام.</p>
+        <div id="collectionRegionTableHolder"></div>
+      </div>
+      <div class="section-card">
+        <h3>نمودار درصد انجام جمع‌آوری به تفکیک ناحیه</h3>
+        <div class="chart-wrap"><div id="chartCollectionRegions"></div></div>
+      </div>
+    </div>
+
+    <!-- ---- PM VIEW ---- -->
+    <div class="view" id="view-pm">
+      <div id="pmFiltersHolder"></div>
+      <div class="kpi-grid" id="pmKpis"></div>
+      <div class="section-card">
+        <h3>عملکرد PM به تفکیک کارمند</h3>
+        <div id="pmEmployeeTableHolder"></div>
+      </div>
+      <div class="section-card">
+        <h3>نمودار درصد انجام PM به تفکیک کارمند</h3>
+        <div class="chart-wrap"><div id="chartPmEmployees"></div></div>
+      </div>
+      <div class="section-card">
+        <h3>لیست مانده‌ها (آماده پشتیبانی)</h3>
+        <div id="pmPendingHolder"></div>
+      </div>
+    </div>
+
+    <!-- ---- COLLECTION VIEW (جمع‌آوری) ---- -->
+    <div class="view" id="view-collection">
+      <div id="collectionFiltersHolder"></div>
+      <div class="kpi-grid" id="collectionKpis"></div>
+      <div class="section-card">
+        <h3>عملکرد جمع‌آوری به تفکیک کارمند</h3>
+        <div id="collectionEmployeeTableHolder"></div>
+      </div>
+      <div class="section-card">
+        <h3>نمودار درصد انجام جمع‌آوری به تفکیک کارمند</h3>
+        <div class="chart-wrap"><div id="chartCollectionEmployees"></div></div>
+      </div>
+      <div class="section-card">
+        <h3>لیست مانده‌ها</h3>
+        <div id="collectionPendingHolder"></div>
+      </div>
+    </div>
+
+    <!-- ---- DAILY PERFORMANCE VIEW (عملکرد روزانه) ---- -->
+    <div class="view" id="view-dailyperf">
+      <div class="tab-pill-group" id="dpSubTabs"></div>
+      <div id="dpContent"></div>
     </div>
 
     <!-- ---- BANKS VIEW (manager only) ---- -->
@@ -524,6 +608,32 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div class="section-card">
         <h3>نمودار تعداد تراکنش به تفکیک صنف</h3>
         <div class="chart-wrap"><div id="chartSectorsTx"></div></div>
+      </div>
+    </div>
+
+    <!-- ---- SMART ASSISTANT VIEW ---- -->
+    <div class="view" id="view-assistant">
+      <div class="section-card" id="assistantPickerCard" style="display:none;">
+        <h3 id="assistantPickerTitle">انتخاب کارمند</h3>
+        <select id="assistantEmployeeSelect" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:280px;width:100%;"></select>
+      </div>
+      <div class="tab-pill-group" id="assistantSubTabs"></div>
+      <div id="assistantContent"></div>
+    </div>
+
+    <!-- ---- PREDICTION VIEW (پیش‌بینی و تحلیل رفتار پذیرندگان) ---- -->
+    <div class="view" id="view-prediction">
+      <div class="section-card" id="predictionPickerHolder" style="display:none;">
+        <h3>انتخاب کارمند</h3>
+        <select id="predictionEmployeeSelect" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:280px;width:100%;"></select>
+      </div>
+      <div class="tab-pill-group" id="predictionMetricPills"></div>
+      <div id="predictionAlertsBox"></div>
+      <div class="section-card">
+        <h3>پیش‌بینی عملکرد ماه آینده — به تفکیک پذیرنده</h3>
+        <p class="small-note">فقط پذیرندگانی نشان داده می‌شوند که از ماه بعد از نصب (نه خود ماه نصب) تا آخرین ماه فعالیت‌شان، ۵۰٪ یا بیشتر افت یا رشد داشته‌اند — محاسبه کاملاً زنده و بر اساس داده فعلی است، هیچ چیزی ذخیره یا پیش‌فرض نیست.</p>
+        <p class="small-note" id="predictionSortNote"></p>
+        <div id="predictionTableBox"></div>
       </div>
     </div>
 
@@ -585,6 +695,26 @@ tbody tr:hover{background:var(--navy-pale-2);}
           <button class="btn-sm secondary" onclick="cancelUpload()">انصراف</button>
         </div>
         <div id="mappingMsg" class="small-note"></div>
+      </div>
+
+      <div class="section-card">
+        <h3>بارگذاری فایل PM</h3>
+        <div class="upload-box">
+          <div style="font-size:32px;">🛠️</div>
+          <p style="margin:10px 0 4px;font-weight:700;color:var(--navy);">فایل اکسل داده‌های PM را انتخاب کنید</p>
+          <p class="small-note">فرمت مجاز: xlsx / csv — این فایل جداگانه از فایل بازاریابی است و مبنای تب «PM» قرار می‌گیرد.</p>
+          <input type="file" id="pmExcelInput" accept=".xlsx,.csv" onchange="handlePmFileSelect(event)">
+        </div>
+      </div>
+      <div class="section-card hidden" id="pmMappingCard">
+        <h3>تطبیق ستون‌های فایل PM</h3>
+        <p class="small-note">برای هر فیلد، ستون متناظر آن را در فایل انتخاب کنید.</p>
+        <div id="pmMappingRows"></div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn-sm" onclick="confirmPmMapping()">پردازش و ثبت داده‌های PM</button>
+          <button class="btn-sm secondary" onclick="cancelPmUpload()">انصراف</button>
+        </div>
+        <div id="pmMappingMsg" class="small-note"></div>
       </div>
     </div>
 
@@ -698,14 +828,27 @@ const DEFAULT_WEIGHTS = [
 /* ================= STATE ================= */
 let currentUser = null; // {name, role, region?}
 let records = [];       // normalized records from excel
+let pmRecords = [];     // separate PM dataset, uploaded independently by the site admin
+let dailyPerfRecords = []; // daily performance log entries, one per (employee, date)
+let pendingTasks = [];     // "کارهای در انتظار" workflow items
 let weights = JSON.parse(JSON.stringify(DEFAULT_WEIGHTS));
 let messages = [];
 let wideMonthlyPairs = []; // detected monthly amount/transaction column pairs
-let filters = {
-  months:new Set(), employees:new Set(), regions:new Set(), banks:new Set(), sectors:new Set(),
-  channels:new Set(), terminalStatuses:new Set(),
-  outputMonthsAmount:new Set(), outputMonthsTx:new Set(),
-};
+function emptyFilterSet(){
+  return {
+    months:new Set(), employees:new Set(), regions:new Set(), banks:new Set(), sectors:new Set(),
+    channels:new Set(), terminalStatuses:new Set(),
+    outputMonthsAmount:new Set(), outputMonthsTx:new Set(),
+  };
+}
+function emptyPmFilterSet(){
+  return { periods:new Set(), employees:new Set(), regions:new Set(), pmStatus:new Set() };
+}
+let filterStates = {}; // per-tab filter isolation — each tab id gets its own independent filter set
+function getFilters(tabId){
+  if(!filterStates[tabId]) filterStates[tabId] = (tabId==="pm" ? emptyPmFilterSet() : emptyFilterSet());
+  return filterStates[tabId];
+}
 let trendMode = "monthly"; // monthly | quarterly
 let myTrendMode = "monthly";
 let trendIndicator = "amount"; // amount | transactions | count
@@ -764,8 +907,38 @@ async function supaAddMessage(msg){
   }catch(e){ console.error("supabase message write error", e); supaAvailable = false; return false; }
 }
 
+/* ---- Real AI analysis via Supabase Edge Function proxy (keeps the API key server-side) ---- */
+async function callAiAssistant(prompt){
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-assistant`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json", "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY},
+    body: JSON.stringify({prompt}),
+  });
+  const data = await res.json();
+  if(!res.ok || data.error) throw new Error(data.error || ("status "+res.status));
+  return data.text;
+}
+async function enhanceWithAI(boxId, btnId, promptBuilder){
+  const btn = document.getElementById(btnId);
+  const out = document.getElementById(boxId);
+  if(btn) btn.disabled = true;
+  out.innerHTML = `<div class="empty-state">در حال دریافت تحلیل از هوش مصنوعی...</div>`;
+  try{
+    const text = await callAiAssistant(promptBuilder());
+    out.innerHTML = `<div class="msg-item" style="white-space:pre-line;line-height:2;">${text}</div>`;
+  }catch(e){
+    console.error(e);
+    out.innerHTML = `<div class="empty-state" style="color:var(--warn);">خطا در دریافت تحلیل هوش مصنوعی — اتصال به Edge Function را بررسی کنید.</div>`;
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
 async function loadAll(){
   records = await supaGetAppData("performance_records", []);
+  pmRecords = await supaGetAppData("pm_records", []);
+  dailyPerfRecords = await supaGetAppData("daily_perf_records", []);
+  pendingTasks = await supaGetAppData("pending_tasks", []);
   weights = await supaGetAppData("weights", DEFAULT_WEIGHTS);
   messages = await supaGetMessages();
 }
@@ -798,17 +971,24 @@ function stopAutoRefresh(){
 async function checkForUpdates(){
   if(!currentUser) return;
   try{
-    const [newRecords, newWeights, newMessages] = await Promise.all([
+    const [newRecords, newPmRecords, newDailyPerf, newTasks, newWeights, newMessages] = await Promise.all([
       supaGetAppData("performance_records", records),
+      supaGetAppData("pm_records", pmRecords),
+      supaGetAppData("daily_perf_records", dailyPerfRecords),
+      supaGetAppData("pending_tasks", pendingTasks),
       supaGetAppData("weights", weights),
       supaGetMessages(),
     ]);
     const changed =
       JSON.stringify(newRecords) !== JSON.stringify(records) ||
+      JSON.stringify(newPmRecords) !== JSON.stringify(pmRecords) ||
+      JSON.stringify(newDailyPerf) !== JSON.stringify(dailyPerfRecords) ||
+      JSON.stringify(newTasks) !== JSON.stringify(pendingTasks) ||
       JSON.stringify(newWeights) !== JSON.stringify(weights) ||
       JSON.stringify(newMessages) !== JSON.stringify(messages);
     if(changed){
-      records = newRecords; weights = newWeights; messages = newMessages;
+      records = newRecords; pmRecords = newPmRecords; dailyPerfRecords = newDailyPerf; pendingTasks = newTasks;
+      weights = newWeights; messages = newMessages;
       refreshCurrentView();
       flashUpdateNotice();
     }
@@ -874,21 +1054,39 @@ async function startApp(){
 }
 
 /* ================= TABS ================= */
+const MARKETING_SUBGROUP_DEFS = [
+  {id:"dashboard", label:"آمار عملکرد"},
+  {id:"trend", label:"روند عملکرد"},
+  {id:"banks", label:"عملکرد بانک‌ها"},
+  {id:"sectors", label:"عملکرد صنف‌ها"},
+  {id:"returns", label:"بازاریابی مرجوعی"},
+];
+const MARKETING_SUBGROUP_IDS = MARKETING_SUBGROUP_DEFS.map(t=>t.id);
+const SUPPORT_SUBGROUP_DEFS = [
+  {id:"pm", label:"PM"},
+  {id:"collection", label:"جمع‌آوری"},
+];
+const SUPPORT_SUBGROUP_IDS = SUPPORT_SUBGROUP_DEFS.map(t=>t.id);
+let subgroupLastTab = {marketing:"dashboard", support:"pm"};
+
 function buildTabs(){
   const bar = document.getElementById("tabsBar");
   bar.innerHTML = "";
   let groups = [];
   if(currentUser.role==="manager"){
     groups = [
-      {label:"بازاریابی", items:[
-        {id:"dashboard", label:"آمار عملکرد"},
-        {id:"trend", label:"روند عملکرد"},
-        {id:"banks", label:"عملکرد بانک‌ها"},
-        {id:"sectors", label:"عملکرد صنف‌ها"},
-        {id:"returns", label:"بازاریابی مرجوعی"},
-      ]},
-      {label:"بازاریابی ناحیه", singleId:"regions", items:[
+      {label:"فرآیندهای پشتیبانی", subgroupId:"support"},
+      {label:"وضعیت ناحیه‌ها", singleId:"regions", items:[
         {id:"regions", label:"ناحیه‌ها"},
+      ]},
+      {label:"عملکرد روزانه", singleId:"dailyperf", items:[
+        {id:"dailyperf", label:"عملکرد روزانه"},
+      ]},
+      {label:"دستیار هوشمند", singleId:"assistant", items:[
+        {id:"assistant", label:"دستیار هوشمند"},
+      ]},
+      {label:"پیش‌بینی پذیرندگان", singleId:"prediction", items:[
+        {id:"prediction", label:"پیش‌بینی و تحلیل رفتار پذیرندگان"},
       ]},
       {label:"پیام‌ها", singleId:"messages", items:[
         {id:"messages", label:"پیام‌ها"},
@@ -906,6 +1104,11 @@ function buildTabs(){
         {id:"mydashboard", label:"داشبورد من"},
         {id:"mytrend", label:"روند عملکرد"},
         {id:"returns", label:"مرجوعی‌های من"},
+        {id:"pm", label:"PM"},
+        {id:"collection", label:"جمع‌آوری"},
+        {id:"dailyperf", label:"عملکرد روزانه"},
+        {id:"assistant", label:"دستیار هوشمند"},
+        {id:"prediction", label:"پیش‌بینی پذیرندگان"},
         {id:"messages", label:"پیام‌های مدیر"},
       ]}
     ];
@@ -921,6 +1124,13 @@ function buildTabs(){
         b.onclick = ()=>switchTab(t.id);
         bar.appendChild(b);
       });
+    }else if(g.subgroupId){
+      const b = document.createElement("button");
+      b.className = "tab-btn";
+      b.id = "tabbtn-group-"+g.subgroupId;
+      b.textContent = g.label;
+      b.onclick = ()=> switchTab(subgroupLastTab[g.subgroupId]);
+      bar.appendChild(b);
     }else if(g.singleId){
       const b = document.createElement("button");
       b.className = "tab-btn";
@@ -928,58 +1138,70 @@ function buildTabs(){
       b.textContent = g.label;
       b.onclick = ()=>switchTab(g.singleId);
       bar.appendChild(b);
-    }else{
-      const wrap = document.createElement("div");
-      wrap.className = "tab-group";
-      const catBtn = document.createElement("button");
-      catBtn.className = "tab-btn tab-cat-btn";
-      catBtn.innerHTML = `${g.label} <span style="font-size:10px;">▾</span>`;
-      const sub = document.createElement("div");
-      sub.className = "tab-submenu";
-      g.items.forEach(t=>{
-        const sb = document.createElement("button");
-        sb.className = "tab-sub-btn";
-        sb.id = "tabbtn-"+t.id;
-        sb.textContent = t.label;
-        sb.onclick = (e)=>{ e.stopPropagation(); sub.classList.remove("open"); switchTab(t.id); };
-        sub.appendChild(sb);
-      });
-      catBtn.onclick = (e)=>{
-        e.stopPropagation();
-        document.querySelectorAll(".tab-submenu").forEach(s=>{ if(s!==sub) s.classList.remove("open"); });
-        const willOpen = !sub.classList.contains("open");
-        sub.classList.toggle("open");
-        if(willOpen){
-          const rect = catBtn.getBoundingClientRect();
-          sub.style.top = (rect.bottom+6)+"px";
-          sub.style.left = Math.max(8, Math.min(rect.right-190, window.innerWidth-198))+"px";
-        }
-      };
-      wrap.appendChild(catBtn);
-      wrap.appendChild(sub);
-      bar.appendChild(wrap);
     }
   });
 }
 document.addEventListener("click", ()=>{
-  document.querySelectorAll(".tab-submenu").forEach(s=>s.classList.remove("open"));
   document.getElementById("searchDropdown").classList.remove("open");
 });
+function renderSubtabsBar(activeId){
+  const bar1 = document.getElementById("subtabsBar");
+  const bar2 = document.getElementById("subtabsBar2");
+  const inMarketing = currentUser.role==="manager" && MARKETING_SUBGROUP_IDS.includes(activeId);
+  const inSupportTop = inMarketing || activeId==="pm" || activeId==="collection";
+
+  if(inSupportTop){
+    bar1.classList.add("show");
+    bar1.innerHTML = "";
+    const chips = [
+      {label:"بازاریابی", active: inMarketing, action: ()=> switchTab(subgroupLastTab.marketing)},
+      {label:"PM", active: activeId==="pm", action: ()=> switchTab("pm")},
+      {label:"جمع‌آوری", active: activeId==="collection", action: ()=> switchTab("collection")},
+    ];
+    chips.forEach(c=>{
+      const chip = document.createElement("button");
+      chip.className = "subtab-chip" + (c.active ? " active" : "");
+      chip.textContent = c.label;
+      chip.onclick = c.action;
+      bar1.appendChild(chip);
+    });
+  }else{
+    bar1.classList.remove("show");
+    bar1.innerHTML = "";
+  }
+
+  if(inMarketing){
+    bar2.classList.add("show");
+    bar2.innerHTML = "";
+    MARKETING_SUBGROUP_DEFS.forEach(t=>{
+      const chip = document.createElement("button");
+      chip.className = "subtab-chip" + (t.id===activeId ? " active" : "");
+      chip.textContent = t.label;
+      chip.onclick = ()=> switchTab(t.id);
+      bar2.appendChild(chip);
+    });
+  }else{
+    bar2.classList.remove("show");
+    bar2.innerHTML = "";
+  }
+}
+
 
 function switchTab(id){
   if(["regions","banks","sectors","weights"].includes(id) && currentUser.role!=="manager") id = "mydashboard";
   if(id==="upload" && !(currentUser.role==="manager" && currentUser.canUpload)) id = "mydashboard";
+  if(MARKETING_SUBGROUP_IDS.includes(id)) subgroupLastTab.marketing = id;
+  if(SUPPORT_SUBGROUP_IDS.includes(id)) subgroupLastTab.support = id;
+
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.querySelectorAll(".tab-btn, .tab-sub-btn").forEach(v=>v.classList.remove("active"));
-  document.querySelectorAll(".tab-submenu").forEach(s=>s.classList.remove("open"));
+  document.querySelectorAll(".tab-btn").forEach(v=>v.classList.remove("active"));
   const view = document.getElementById("view-"+id);
   if(view) view.classList.add("active");
-  const btn = document.getElementById("tabbtn-"+id);
-  if(btn){
-    btn.classList.add("active");
-    const group = btn.closest(".tab-group");
-    if(group) group.querySelector(".tab-cat-btn").classList.add("active");
-  }
+  let groupBtnId = null;
+  if(MARKETING_SUBGROUP_IDS.includes(id) || SUPPORT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-support";
+  const btn = document.getElementById("tabbtn-"+id) || (groupBtnId ? document.getElementById(groupBtnId) : null);
+  if(btn) btn.classList.add("active");
+  renderSubtabsBar(id);
 
   if(id==="dashboard") renderManagerDashboard();
   if(id==="mydashboard") renderMyDashboard();
@@ -991,6 +1213,11 @@ function switchTab(id){
   if(id==="sectors") renderSectorsView();
   if(id==="weights") renderWeightsView();
   if(id==="messages") renderMessagesView();
+  if(id==="assistant") renderAssistantView();
+  if(id==="prediction") renderPredictionView();
+  if(id==="pm") renderPmView();
+  if(id==="dailyperf") renderDailyPerfView();
+  if(id==="collection") renderCollectionView();
   if(id==="upload") renderUploadView();
 }
 
@@ -1008,23 +1235,29 @@ function availableValues(field){
   });
   return Array.from(set).filter(Boolean).sort();
 }
+let activeFilterTabId = "dashboard"; // set by applyFilters() so downstream calc helpers below know which tab's filters to read
 function passesOutputMonthForAmount(r){
+  const filters = getFilters(activeFilterTabId);
   return filters.outputMonthsAmount.size===0 || filters.outputMonthsAmount.has(r.activityMonth);
 }
 function passesOutputMonthForTx(r){
+  const filters = getFilters(activeFilterTabId);
   return filters.outputMonthsTx.size===0 || filters.outputMonthsTx.has(r.activityMonth);
 }
 function monthsInScopeForCount(){
+  const filters = getFilters(activeFilterTabId);
   if(filters.months.size) return filters.months.size;
   const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && r.installMonth).map(r=>r.installMonth));
   return present.size || 1;
 }
 function monthsInScopeForOutputAmount(){
+  const filters = getFilters(activeFilterTabId);
   if(filters.outputMonthsAmount.size) return filters.outputMonthsAmount.size;
   const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && r.amount).map(r=>r.activityMonth));
   return present.size || 1;
 }
 function monthsInScopeForOutputTx(){
+  const filters = getFilters(activeFilterTabId);
   if(filters.outputMonthsTx.size) return filters.outputMonthsTx.size;
   const present = new Set(records.filter(r=>r.terminalStatus==="نصب شده" && r.transactions).map(r=>r.activityMonth));
   return present.size || 1;
@@ -1079,10 +1312,11 @@ function buildFilterGroup(bar, d, opts){
 function orderMonthValues(values){
   return PERSIAN_MONTHS.filter(m=>values.includes(m)).concat(values.filter(m=>!PERSIAN_MONTHS.includes(m)));
 }
-function buildFilterBar(containerId, opts={}){
+function buildFilterBar(containerId, tabId, opts={}){
   const holder = document.getElementById(containerId);
   holder.innerHTML = "";
   const exclude = opts.excludeKeys || [];
+  const filters = getFilters(tabId);
 
   const inputDefs = [
     {key:"months", label:"ماه نصب", values:orderMonthValues(availableValues("month")), set:filters.months},
@@ -1135,7 +1369,9 @@ function refreshCurrentView(){
   switchTab(id);
 }
 
-function applyFilters(recs, opts={}){
+function applyFilters(recs, tabId, opts={}){
+  activeFilterTabId = tabId;
+  const filters = getFilters(tabId);
   return recs.filter(r=>{
     if(filters.months.size && !filters.months.has(r.installMonth)) return false;
     if(!opts.lockEmployee && filters.employees.size && !filters.employees.has(r.employee)) return false;
@@ -1415,8 +1651,8 @@ function computeRanking(recs){
 
 /* ================= MANAGER DASHBOARD ================= */
 function renderManagerDashboard(){
-  buildFilterBar("dashFiltersHolder");
-  const filtered = applyFilters(records);
+  buildFilterBar("dashFiltersHolder", "dashboard");
+  const filtered = applyFilters(records, "dashboard");
   const {totalCount, totalAmount, totalTx} = computeKpis(filtered);
   const kpiHolder = document.getElementById("dashKpis");
 
@@ -1530,9 +1766,9 @@ function rankingTableHtml(ranking){
 
 /* ================= EMPLOYEE DASHBOARD ================= */
 function renderMyDashboard(){
-  buildFilterBar("myFiltersHolder", {lockEmployee:true});
-  const myFiltered = applyFilters(records, {lockEmployee:true});
-  const allFiltered = applyFilters(records); // for averages, ignoring employee lock naturally (no employee filter shown)
+  buildFilterBar("myFiltersHolder", "mydashboard", {lockEmployee:true});
+  const myFiltered = applyFilters(records, "mydashboard", {lockEmployee:true});
+  const allFiltered = applyFilters(records, "mydashboard"); // for averages, ignoring employee lock naturally (no employee filter shown)
   const {totalCount, totalAmount, totalTx} = computeKpis(myFiltered);
   const myRatios = calcRatios(totalAmount, totalTx, totalCount);
 
@@ -1549,6 +1785,9 @@ function renderMyDashboard(){
     <div class="kpi-card"><div class="label">مبلغ بازاریابی من</div><div class="value">${fmtMoney(totalAmount)}</div></div>
     <div class="kpi-card"><div class="label">تعداد تراکنش من</div><div class="value">${fmtNum(totalTx)}</div></div>
     <div class="kpi-card"><div class="label">درصد مسدودی</div><div class="value">${myGprs.pct.toFixed(1)}٪</div></div>
+    <div class="kpi-card"><div class="label">TP (تراکنش ÷ بازاریابی)</div><div class="value">${myRatios.TP.toFixed(2)}</div></div>
+    <div class="kpi-card"><div class="label">AP (مبلغ ÷ بازاریابی)</div><div class="value" style="font-size:16px;">${fmtMoney(myRatios.AP)}</div></div>
+    <div class="kpi-card"><div class="label">AT (مبلغ ÷ تراکنش)</div><div class="value" style="font-size:16px;">${fmtMoney(myRatios.AT)}</div></div>
   `;
 
   // comparison with team average (non-confidential)
@@ -1616,14 +1855,6 @@ function renderMyDashboard(){
 /* ================= EMPLOYEE TREND VIEW ================= */
 let myTrendCompareEmployee = "";
 function renderMyTrendView(){
-  const myFiltered = applyFilters(records, {lockEmployee:true});
-  const {totalCount, totalAmount, totalTx} = computeKpis(myFiltered);
-  const r = calcRatios(totalAmount, totalTx, totalCount);
-  document.getElementById("myTrendKpis").innerHTML = `
-    <div class="kpi-card"><div class="label">TP (تراکنش÷بازاریابی)</div><div class="value">${r.TP.toFixed(2)}</div></div>
-    <div class="kpi-card"><div class="label">AP (مبلغ÷بازاریابی)</div><div class="value" style="font-size:16px;">${fmtMoney(r.AP)}</div></div>
-    <div class="kpi-card"><div class="label">AT (مبلغ÷تراکنش)</div><div class="value" style="font-size:16px;">${fmtMoney(r.AT)}</div></div>
-  `;
   const sel = document.getElementById("myTrendCompareSelect");
   const others = EMPLOYEES.map(e=>e.name).filter(n=>n!==currentUser.name);
   sel.innerHTML = `<option value="">— بدون مقایسه —</option>` + others.map(n=>`<option value="${n}" ${n===myTrendCompareEmployee?"selected":""}>${n}</option>`).join("");
@@ -1658,7 +1889,7 @@ function renderMyTrendPills(){
   });
 }
 function renderMyTrendChart(){
-  const allRecs = applyFilters(records);
+  const allRecs = applyFilters(records, "mytrend");
   const employeeList = [currentUser.name, myTrendCompareEmployee].filter(Boolean);
   const {labels, dataMap} = buildTrendSeries(allRecs, myTrendMode, employeeList, myTrendIndicator);
   const indDef = TREND_INDICATORS.find(i=>i.key===myTrendIndicator);
@@ -1768,7 +1999,7 @@ function buildTrendSeries(recs, mode, employeeList, indicator){
   return {labels:orderedMonths, dataMap:map};
 }
 function renderTrendChart(){
-  const filtered = applyFilters(records);
+  const filtered = applyFilters(records, "trend");
   const emps = Array.from(trendSelectedEmployees);
   const {labels, dataMap} = buildTrendSeries(filtered, trendMode, emps, trendIndicator);
   chartLine("trendChart", labels, emps.map((e,i)=>({name:e, values:dataMap[e]||[], color:CHART_PALETTE[i%CHART_PALETTE.length]})), {height:340});
@@ -1792,8 +2023,8 @@ function computeReturnRecords(recs, opts={}){
 
 function renderReturnsView(){
   const isManager = currentUser.role === "manager";
-  buildFilterBar("returnsFiltersHolder", {lockEmployee: !isManager});
-  const filtered = applyFilters(records, {lockEmployee: !isManager});
+  buildFilterBar("returnsFiltersHolder", "returns", {lockEmployee: !isManager});
+  const filtered = applyFilters(records, "returns", {lockEmployee: !isManager});
   const returns = computeReturnRecords(filtered, {lockEmployee: !isManager});
 
   const byStatus = {};
@@ -1895,8 +2126,8 @@ const REGION_PIE_INDICATORS = [
   {key:"transactions", label:"تعداد تراکنش"},
 ];
 function renderRegionsView(){
-  buildFilterBar("regionsFiltersHolder", {excludeKeys:["employees","banks","sectors","channels"]});
-  const filtered = applyFilters(records);
+  buildFilterBar("regionsFiltersHolder", "regions", {excludeKeys:["employees","banks","sectors","channels"]});
+  const filtered = applyFilters(records, "regions");
   const ranking = computeRegionRanking(filtered);
   const rows = ranking.map(r=>{
     let badgeClass = r.rank===1?"gold":r.rank===2?"silver":r.rank===3?"bronze":"";
@@ -1933,13 +2164,15 @@ function renderRegionsView(){
     pillHolder.appendChild(b);
   });
   chartPie("chartRegionsPie", ranking.map(r=>({label:r.region, value:Math.max(0,r[currentRegionPieIndicator])})));
+  renderPmRegionSection();
+  renderCollectionRegionSection();
 }
 
 /* ================= BANKS / SECTORS VIEWS (manager only) ================= */
 let selectedBanks = new Set();
 function renderFieldPerformanceView(field, opts){
-  buildFilterBar(opts.filtersHolderId, opts.filterOpts || {});
-  const filtered = applyFilters(records);
+  buildFilterBar(opts.filtersHolderId, opts.tabId, opts.filterOpts || {});
+  const filtered = applyFilters(records, opts.tabId);
   const allGroups = groupByField(filtered, field); // already sorted desc by amount
   const totalAmount = allGroups.reduce((s,g)=>s+g.amount,0) || 1;
   const totalCount = allGroups.reduce((s,g)=>s+g.storeCount,0) || 1;
@@ -1991,16 +2224,450 @@ function renderFieldPerformanceView(field, opts){
   chartBars(opts.chartTxId, top.slice().sort((a,b)=>b.transactions-a.transactions).map(g=>({label:g.value, value:g.transactions})), {formatter:fmtNum, color:"#2e7d5b"});
 }
 function renderBanksView(){
-  renderFieldPerformanceView("bank", {filtersHolderId:"banksFiltersHolder", pickerId:"bankPicker", tableHolderId:"banksTableHolder", chartAmountId:"chartBanksAmount", chartCountId:"chartBanksCount", chartTxId:"chartBanksTx", label:"بانک", selectedSet:selectedBanks, renderFn:renderBanksView});
+  renderFieldPerformanceView("bank", {tabId:"banks", filtersHolderId:"banksFiltersHolder", pickerId:"bankPicker", tableHolderId:"banksTableHolder", chartAmountId:"chartBanksAmount", chartCountId:"chartBanksCount", chartTxId:"chartBanksTx", label:"بانک", selectedSet:selectedBanks, renderFn:renderBanksView});
 }
 function renderSectorsView(){
-  renderFieldPerformanceView("sector", {filtersHolderId:"sectorsFiltersHolder", noPicker:true, filterOpts:{excludeKeys:["sectors"]}, tableHolderId:"sectorsTableHolder", chartAmountId:"chartSectorsAmount", chartCountId:"chartSectorsCount", chartTxId:"chartSectorsTx", label:"صنف", renderFn:renderSectorsView});
+  renderFieldPerformanceView("sector", {tabId:"sectors", filtersHolderId:"sectorsFiltersHolder", noPicker:true, filterOpts:{excludeKeys:["sectors"]}, tableHolderId:"sectorsTableHolder", chartAmountId:"chartSectorsAmount", chartCountId:"chartSectorsCount", chartTxId:"chartSectorsTx", label:"صنف", renderFn:renderSectorsView});
+}
+
+/* ================= SMART ASSISTANT (دستیار هوشمند) — rule-based, no external API ================= */
+function assistantRoleTier(){
+  if(currentUser.role!=="manager") return "employee";
+  if(currentUser.fullAccess) return "fullAccess";
+  return "regionManager";
+}
+const ASSISTANT_TABS = {
+  employee: [
+    {id:"strengths", label:"نقاط قوت"},
+    {id:"weaknesses", label:"نقاط ضعف"},
+    {id:"overall", label:"تحلیل کلی"},
+    {id:"suggestions", label:"پیشنهادها"},
+  ],
+  regionManager: [
+    {id:"team", label:"کارکنان ناحیه من"},
+    {id:"regionCompare", label:"مقایسه با نواحی دیگر"},
+  ],
+  fullAccess: [
+    {id:"team", label:"تحلیل کارمندان"},
+    {id:"regionCompare", label:"تحلیل نواحی"},
+    {id:"strategic", label:"پیشنهاد استراتژیک"},
+  ],
+};
+let assistantSubTab = null;
+let assistantSelectedEmployee = null;
+
+const ASSISTANT_METRICS = [
+  {key:"amount", label:"مبلغ بازاریابی", fmt:fmtMoney},
+  {key:"count", label:"تعداد بازاریابی", fmt:fmtNum},
+  {key:"transactions", label:"تعداد تراکنش", fmt:fmtNum},
+  {key:"TP", label:"TP (تراکنش ÷ بازاریابی)", fmt:v=>v.toFixed(2)},
+  {key:"AP", label:"AP (مبلغ ÷ بازاریابی)", fmt:fmtMoney},
+  {key:"AT", label:"AT (مبلغ ÷ تراکنش)", fmt:fmtMoney},
+  {key:"gprsBlockedPct", label:"درصد مسدودی", fmt:v=>v.toFixed(1)+"٪"},
+];
+function generateEmployeeInsights(name, filtered){
+  const ranking = computeRanking(filtered);
+  const me = ranking.find(e=>e.employee===name);
+  if(!me) return null;
+  const n = ranking.length;
+  const avgOf = key => ranking.reduce((s,e)=>s+e[key],0)/n;
+
+  const strengths = [], weaknesses = [];
+  ASSISTANT_METRICS.forEach(m=>{
+    const avg = avgOf(m.key);
+    const diffPct = avg ? ((me[m.key]-avg)/avg*100) : 0;
+    const sorted = ranking.slice().sort((a,b)=>b[m.key]-a[m.key]);
+    const rank = sorted.findIndex(e=>e.employee===name)+1;
+    const item = {metric:m.label, key:m.key, rank, n, diffPct, value:m.fmt(me[m.key]), avgValue:m.fmt(avg)};
+    if(rank <= Math.max(1,Math.ceil(n*0.3)) && diffPct > 3) strengths.push(item);
+    else if(rank >= Math.ceil(n*0.7) && diffPct < -3) weaknesses.push(item);
+  });
+  strengths.sort((a,b)=>a.rank-b.rank);
+  weaknesses.sort((a,b)=>b.rank-a.rank);
+
+  const empRecs = filtered.filter(r=>r.employee===name);
+  const bankBreak = groupByField(empRecs, "bank");
+  const sectorBreak = groupByField(empRecs, "sector");
+
+  function opportunities(field){
+    const allBreak = groupByField(filtered, field);
+    const myBreak = groupByField(empRecs, field);
+    const myMap = {}; myBreak.forEach(b=>myMap[b.value]=b.amount);
+    const totalMarket = allBreak.reduce((s,b)=>s+b.amount,0) || 1;
+    return allBreak.filter(b=>b.amount>0).map(b=>{
+      const myAmount = myMap[b.value]||0;
+      const myShare = b.amount ? myAmount/b.amount*100 : 0;
+      const marketWeight = b.amount/totalMarket*100;
+      return {value:b.value, myShare, marketWeight, opportunityScore: marketWeight - myShare*0.5};
+    }).sort((a,b)=>b.opportunityScore-a.opportunityScore).slice(0,3);
+  }
+  return {
+    me, ranking, n, strengths, weaknesses, bankBreak, sectorBreak,
+    bankOpportunities: opportunities("bank"), sectorOpportunities: opportunities("sector"),
+  };
+}
+function overallSummaryText(ins){
+  const {me, n, strengths, weaknesses} = ins;
+  const tone = me.rank <= Math.ceil(n*0.3) ? "عملکرد در مجموع بسیار خوب و بالاتر از میانگین تیم است." :
+    me.rank >= Math.ceil(n*0.7) ? "عملکرد در حال حاضر پایین‌تر از میانگین تیم است و جای بهبود قابل‌توجهی وجود دارد." :
+    "عملکرد در محدوده میانگین تیم قرار دارد، با فرصت‌هایی برای ارتقا.";
+  return `${tone} رتبه فعلی ${me.rank} از ${n} با امتیاز نهایی ${me.finalScore} از ۱۰۰ است. ` +
+    (strengths.length ? `قوی‌ترین نقطه «${strengths[0].metric}» است. ` : "") +
+    (weaknesses.length ? `بیشترین فرصت بهبود در «${weaknesses[0].metric}» است.` : "");
+}
+function suggestionsList(ins){
+  const sug = [];
+  ins.weaknesses.forEach(w=>{
+    sug.push(`برای بهبود «${w.metric}»، تمرکز کنید تا فاصله ${Math.abs(w.diffPct).toFixed(1)}٪ با میانگین تیم جبران شود.`);
+  });
+  if(ins.bankOpportunities.length){
+    const b = ins.bankOpportunities[0];
+    sug.push(`بانک «${b.value}» سهم بزرگی از بازار کل تیم دارد (${b.marketWeight.toFixed(1)}٪) اما سهم فعلی در آن فقط ${b.myShare.toFixed(1)}٪ است — فرصت رشد سریع.`);
+  }
+  if(ins.sectorOpportunities.length){
+    const s = ins.sectorOpportunities[0];
+    sug.push(`صنف «${s.value}» نیز فرصت مشابهی دارد: سهم بازار ${s.marketWeight.toFixed(1)}٪ در برابر سهم فعلی ${s.myShare.toFixed(1)}٪.`);
+  }
+  if(sug.length===0) sug.push("در حال حاضر عملکرد متعادل است؛ روی حفظ روند فعلی و ثبات در همه شاخص‌ها تمرکز شود.");
+  return sug;
+}
+function managerialSuggestionText(ins){
+  const out = [];
+  ins.weaknesses.forEach(w=>{
+    out.push(`پیشنهاد آموزش: روی «${w.metric}» با ${ins.me.employee} کار شود — فاصله ${Math.abs(w.diffPct).toFixed(1)}٪ زیر میانگین تیم.`);
+  });
+  if(ins.me.rank > ins.n*0.7){
+    out.push(`با توجه به رتبه پایین کلی (${ins.me.rank} از ${ins.n})، جلسه بازخورد و تعیین هدف کوتاه‌مدت پیشنهاد می‌شود.`);
+  }
+  if(ins.bankOpportunities.length){
+    out.push(`می‌توان ${ins.me.employee} را برای تمرکز بیشتر روی بانک «${ins.bankOpportunities[0].value}» راهنمایی کرد.`);
+  }
+  if(out.length===0) out.push(`عملکرد در وضعیت مطلوبی است؛ تشویق و حفظ انگیزه پیشنهاد می‌شود.`);
+  return out;
+}
+function listInsightItems(items, cls){
+  if(items.length===0) return `<div class="empty-state">موردی در این بخش شناسایی نشد.</div>`;
+  return items.map(it=>`<div class="msg-item"><div class="msg-head"><span>${it.metric}</span><span class="pill ${cls}">رتبه ${it.rank} از ${it.n}</span></div><p>مقدار شما: ${it.value} — میانگین تیم: ${it.avgValue} (${it.diffPct>=0?"+":""}${it.diffPct.toFixed(1)}٪)</p></div>`).join("");
+}
+function buildEmployeePrompt(ins){
+  return `تو یک مربی و تحلیلگر عملکرد فروش/بازاریابی هستی. بر اساس داده‌های واقعی زیر برای یک کارمند، یک تحلیل روان، صمیمی، انگیزشی و غیرتکراری به زبان فارسی در ۵ تا ۷ جمله بنویس (نه لیست خشک؛ متنی طبیعی که واقعاً کمک‌کننده باشد):
+رتبه: ${ins.me.rank} از ${ins.n}
+امتیاز نهایی: ${ins.me.finalScore} از ۱۰۰
+نقاط قوت: ${ins.strengths.map(s=>`${s.metric} (رتبه ${s.rank}، ${s.diffPct>=0?"+":""}${s.diffPct.toFixed(1)}٪ نسبت به میانگین)`).join("، ") || "موردی ثبت نشده"}
+نقاط ضعف: ${ins.weaknesses.map(s=>`${s.metric} (رتبه ${s.rank}، ${s.diffPct.toFixed(1)}٪ نسبت به میانگین)`).join("، ") || "موردی ثبت نشده"}
+فرصت بازار پیشنهادی: ${ins.bankOpportunities[0] ? "بانک "+ins.bankOpportunities[0].value+" (سهم بازار "+ins.bankOpportunities[0].marketWeight.toFixed(1)+"٪، سهم فعلی فقط "+ins.bankOpportunities[0].myShare.toFixed(1)+"٪)" : "نامشخص"}
+لطفاً فقط بر اساس همین اعداد واقعی تحلیل کن، عدد یا ادعای جدید نساز.`;
+}
+function buildManagerPrompt(ins){
+  return `تو یک مشاور مدیریت منابع انسانی هستی. بر اساس داده‌های واقعی عملکرد کارمند «${ins.me.employee}» زیر، یک پیشنهاد مدیریتی طبیعی، محترمانه و کاربردی به زبان فارسی در ۵ تا ۷ جمله برای مدیرش بنویس — دقیقاً بگو چه چیزی را آموزش دهد، کجا تذکر بدهد، کجا تشویق کند:
+رتبه: ${ins.me.rank} از ${ins.n} | امتیاز نهایی: ${ins.me.finalScore}/100
+نقاط قوت: ${ins.strengths.map(s=>s.metric).join("، ") || "ثبت نشده"}
+نقاط ضعف: ${ins.weaknesses.map(s=>s.metric).join("، ") || "ثبت نشده"}
+فقط بر اساس همین اعداد، بدون ساختن ادعای جدید.`;
+}
+function buildRegionPrompt(tier, ranking){
+  if(tier==="regionManager"){
+    const mine = ranking.find(r=>r.region===currentUser.region);
+    return `تو یک تحلیلگر عملکرد سازمانی هستی. ناحیه «${mine.region}» با امتیاز ${mine.finalScore.toFixed(1)} از ۱۰۰ رتبه ${mine.rank} از ${ranking.length} ناحیه را دارد. مبلغ بازاریابی: ${fmtMoney(mine.amount)}، تعداد تراکنش: ${fmtNum(mine.transactions)}، تعداد بازاریابی: ${fmtNum(mine.count)}. یک تحلیل طبیعی و کاربردی در ۵ تا ۶ جمله فارسی بنویس درباره جایگاه این ناحیه و چه اقدامی برای بهبود رتبه پیشنهاد می‌کنی — فقط بر اساس همین اعداد.`;
+  }
+  const rows = ranking.map(r=>`${r.region}: امتیاز ${r.finalScore.toFixed(1)}، مبلغ ${fmtMoney(r.amount)}، تراکنش ${fmtNum(r.transactions)}`).join(" | ");
+  return `تو یک تحلیلگر سازمانی هستی. وضعیت نواحی: ${rows}. یک تحلیل مقایسه‌ای طبیعی در ۵ تا ۶ جمله فارسی بنویس که نقاط قوت/ضعف هر ناحیه و یک پیشنهاد بهبود کلی برای مدیریت ارائه دهد — فقط بر اساس همین اعداد.`;
+}
+function buildStrategicPrompt(ranking, regionRanking){
+  const n = ranking.length;
+  const avgGprs = ranking.reduce((s,e)=>s+e.gprsBlockedPct,0)/n;
+  const topPerformers = ranking.slice(0,3).map(e=>e.employee).join("، ");
+  const lowCount = ranking.filter(e=>e.rank > n*0.7).length;
+  const weakestRegion = regionRanking[regionRanking.length-1];
+  return `تو یک مشاور استراتژیک ارشد سازمانی هستی. اطلاعات واقعی: ${n} کارمند فعال، ۳ نفر برتر: ${topPerformers}، ${lowCount} نفر در ۳۰٪ پایین رتبه‌بندی، ناحیه ضعیف‌تر: ${weakestRegion.region} (امتیاز ${weakestRegion.finalScore.toFixed(1)})، میانگین درصد مسدودی تیم: ${avgGprs.toFixed(1)}٪. یک تحلیل استراتژیک طبیعی در ۶ تا ۸ جمله فارسی برای مدیر کل بنویس درباره وضعیت کلی سازمان و اولویت‌های بهبود — فقط بر اساس همین اعداد.`;
+}
+
+function renderEmployeeAssistantTab(content, ins, subTab){
+  if(!ins){ content.innerHTML = `<div class="section-card"><div class="empty-state">داده‌ای برای تحلیل موجود نیست.</div></div>`; return; }
+  if(subTab==="strengths"){
+    content.innerHTML = `<div class="section-card"><h3>نقاط قوت شما</h3>${listInsightItems(ins.strengths,"good")}</div>`;
+  }else if(subTab==="weaknesses"){
+    content.innerHTML = `<div class="section-card"><h3>نقاط ضعف شما</h3>${listInsightItems(ins.weaknesses,"warn")}</div>`;
+  }else if(subTab==="overall"){
+    content.innerHTML = `<div class="section-card"><h3>تحلیل کلی عملکرد</h3><p style="line-height:2;">${overallSummaryText(ins)}</p>
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-top:14px;">
+        <div class="kpi-card"><div class="label">رتبه</div><div class="value">${ins.me.rank} از ${ins.n}</div></div>
+        <div class="kpi-card"><div class="label">امتیاز نهایی</div><div class="value">${ins.me.finalScore}/100</div></div>
+        <div class="kpi-card"><div class="label">تعداد نقاط قوت / ضعف</div><div class="value">${ins.strengths.length} / ${ins.weaknesses.length}</div></div>
+      </div></div>
+      <div class="section-card">
+        <h3>تحلیل با هوش مصنوعی واقعی</h3>
+        <button class="btn-sm" id="aiBtnEmp">🤖 دریافت تحلیل هوشمند</button>
+        <div id="aiBoxEmp" style="margin-top:12px;"></div>
+      </div>`;
+    document.getElementById("aiBtnEmp").onclick = ()=> enhanceWithAI("aiBoxEmp","aiBtnEmp", ()=>buildEmployeePrompt(ins));
+  }else if(subTab==="suggestions"){
+    content.innerHTML = `<div class="section-card"><h3>پیشنهادهای کاربردی</h3>${suggestionsList(ins).map(s=>`<div class="msg-item"><p>${s}</p></div>`).join("")}</div>`;
+  }
+}
+function renderManagerEmployeeInsightPanel(content, ins){
+  if(!ins){ content.innerHTML = `<div class="section-card"><div class="empty-state">داده‌ای موجود نیست.</div></div>`; return; }
+  content.innerHTML = `
+    <div class="section-card"><h3>تحلیل عملکرد ${ins.me.employee}</h3><p style="line-height:2;">${overallSummaryText(ins)}</p></div>
+    <div class="grid-2">
+      <div class="section-card"><h3>نقاط قوت</h3>${listInsightItems(ins.strengths,"good")}</div>
+      <div class="section-card"><h3>نقاط ضعف</h3>${listInsightItems(ins.weaknesses,"warn")}</div>
+    </div>
+    <div class="section-card"><h3>پیشنهاد مدیریتی (بر اساس قواعد)</h3>${managerialSuggestionText(ins).map(s=>`<div class="msg-item"><p>${s}</p></div>`).join("")}</div>
+    <div class="section-card">
+      <h3>پیشنهاد مدیریتی با هوش مصنوعی واقعی</h3>
+      <button class="btn-sm" id="aiBtnMgr">🤖 دریافت پیشنهاد هوشمند</button>
+      <div id="aiBoxMgr" style="margin-top:12px;"></div>
+    </div>`;
+  document.getElementById("aiBtnMgr").onclick = ()=> enhanceWithAI("aiBoxMgr","aiBtnMgr", ()=>buildManagerPrompt(ins));
+}
+function renderRegionCompareAssistant(content, tier){
+  const filtered = applyFilters(records, "assistant");
+  const ranking = computeRegionRanking(filtered);
+  if(ranking.length===0){ content.innerHTML = `<div class="section-card"><div class="empty-state">داده‌ای موجود نیست.</div></div>`; return; }
+  if(tier==="regionManager"){
+    const mine = ranking.find(r=>r.region===currentUser.region);
+    const others = ranking.filter(r=>r.region!==currentUser.region);
+    const text = others.every(o=>o.finalScore<=mine.finalScore) ? `ناحیه شما (${mine.region}) در حال حاضر رتبه اول را در بین نواحی دارد.` :
+      `ناحیه شما (${mine.region}) رتبه ${mine.rank} از ${ranking.length} را در بین نواحی دارد.`;
+    const strengths = [], weaknesses = [];
+    const labels = {amount:"مبلغ بازاریابی", transactions:"تعداد تراکنش", count:"تعداد بازاریابی"};
+    Object.keys(labels).forEach(k=>{
+      const avgOthers = others.reduce((s,o)=>s+o[k],0)/(others.length||1);
+      const diff = avgOthers ? (mine[k]-avgOthers)/avgOthers*100 : 0;
+      if(diff>10) strengths.push(`${labels[k]} — ${diff.toFixed(1)}٪ بالاتر از میانگین سایر نواحی`);
+      else if(diff<-10) weaknesses.push(`${labels[k]} — ${Math.abs(diff).toFixed(1)}٪ پایین‌تر از میانگین سایر نواحی`);
+    });
+    content.innerHTML = `
+      <div class="section-card"><h3>مقایسه ناحیه شما با سایر نواحی</h3><p style="line-height:2;">${text}</p></div>
+      <div class="grid-2">
+        <div class="section-card"><h3>نقاط قوت ناحیه</h3>${strengths.length?strengths.map(s=>`<div class="msg-item"><p>${s}</p></div>`).join(""):'<div class="empty-state">موردی شناسایی نشد.</div>'}</div>
+        <div class="section-card"><h3>نقاط ضعف ناحیه</h3>${weaknesses.length?weaknesses.map(s=>`<div class="msg-item"><p>${s}</p></div>`).join(""):'<div class="empty-state">موردی شناسایی نشد.</div>'}</div>
+      </div>
+      <div class="section-card"><h3>پیشنهاد بهبود جایگاه</h3><div class="msg-item"><p>${weaknesses.length ? `تمرکز اولویت‌دار روی «${weaknesses[0].split(" — ")[0]}» می‌تواند سریع‌ترین بهبود رتبه را ایجاد کند.` : "ناحیه در وضعیت مطلوبی قرار دارد؛ حفظ روند فعلی توصیه می‌شود."}</p></div></div>
+      <div class="section-card"><h3>نمودار مقایسه امتیاز نواحی</h3><div class="chart-wrap"><div id="assistantRegionChart"></div></div></div>
+      <div class="section-card">
+        <h3>تحلیل با هوش مصنوعی واقعی</h3>
+        <button class="btn-sm" id="aiBtnRegion">🤖 دریافت تحلیل هوشمند</button>
+        <div id="aiBoxRegion" style="margin-top:12px;"></div>
+      </div>`;
+  }else{
+    const best = ranking[0], worst = ranking[ranking.length-1];
+    content.innerHTML = `
+      <div class="section-card"><h3>تحلیل کلی نواحی</h3><p style="line-height:2;">ناحیه «${best.region}» با امتیاز ${best.finalScore.toFixed(1)}٪ بهترین عملکرد را دارد. ناحیه «${worst.region}» با امتیاز ${worst.finalScore.toFixed(1)}٪ بیشترین نیاز به توجه مدیریتی را دارد — پیشنهاد می‌شود منابع آموزشی و پیگیری بیشتری به این ناحیه اختصاص یابد.</p></div>
+      <div class="section-card"><h3>نمودار امتیاز نواحی</h3><div class="chart-wrap"><div id="assistantRegionChart"></div></div></div>
+      <div class="section-card">
+        <h3>تحلیل با هوش مصنوعی واقعی</h3>
+        <button class="btn-sm" id="aiBtnRegion">🤖 دریافت تحلیل هوشمند</button>
+        <div id="aiBoxRegion" style="margin-top:12px;"></div>
+      </div>`;
+  }
+  document.getElementById("aiBtnRegion").onclick = ()=> enhanceWithAI("aiBoxRegion","aiBtnRegion", ()=>buildRegionPrompt(tier, ranking));
+  chartBars("assistantRegionChart", ranking.map(r=>({label:r.region, value:r.finalScore})), {formatter:v=>v.toFixed(1)+"٪", color:"#1e3a5f"});
+}
+function renderStrategicAssistant(content){
+  const filtered = applyFilters(records, "assistant");
+  const ranking = computeRanking(filtered);
+  const regionRanking = computeRegionRanking(filtered);
+  if(ranking.length===0 || regionRanking.length===0){ content.innerHTML = `<div class="section-card"><div class="empty-state">داده‌ای موجود نیست.</div></div>`; return; }
+  const n = ranking.length;
+  const avgGprs = ranking.reduce((s,e)=>s+e.gprsBlockedPct,0)/n;
+  const lowPerformers = ranking.filter(e=>e.rank > n*0.7);
+  const topPerformers = ranking.slice(0,3);
+  const weakestRegion = regionRanking[regionRanking.length-1];
+  const suggestions = [
+    `${topPerformers.length} کارمند برتر (${topPerformers.map(e=>e.employee).join("، ")}) می‌توانند به‌عنوان الگو یا منتور برای سایر کارکنان معرفی شوند.`,
+    `${lowPerformers.length} کارمند در ۳۰٪ پایین رتبه‌بندی قرار دارند — پیشنهاد می‌شود برنامه آموزشی هدفمند برایشان تدوین شود.`,
+    `ناحیه «${weakestRegion.region}» بیشترین نیاز به تمرکز مدیریتی را دارد (امتیاز ${weakestRegion.finalScore.toFixed(1)}٪).`,
+    `میانگین درصد مسدودی تیم ${avgGprs.toFixed(1)}٪ است.`,
+  ];
+  content.innerHTML = `<div class="section-card"><h3>پیشنهادهای استراتژیک (بر اساس قواعد)</h3>${suggestions.map(s=>`<div class="msg-item"><p>${s}</p></div>`).join("")}</div>
+    <div class="section-card">
+      <h3>پیشنهاد استراتژیک با هوش مصنوعی واقعی</h3>
+      <button class="btn-sm" id="aiBtnStrategic">🤖 دریافت تحلیل هوشمند</button>
+      <div id="aiBoxStrategic" style="margin-top:12px;"></div>
+    </div>`;
+  document.getElementById("aiBtnStrategic").onclick = ()=> enhanceWithAI("aiBoxStrategic","aiBtnStrategic", ()=>buildStrategicPrompt(ranking, regionRanking));
+}
+function renderAssistantView(){
+  const tier = assistantRoleTier();
+  const tabs = ASSISTANT_TABS[tier];
+  if(!assistantSubTab || !tabs.find(t=>t.id===assistantSubTab)) assistantSubTab = tabs[0].id;
+
+  const pillHolder = document.getElementById("assistantSubTabs");
+  pillHolder.innerHTML = "";
+  tabs.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (assistantSubTab===t.id ? " active":"");
+    b.textContent = t.label;
+    b.onclick = ()=>{ assistantSubTab = t.id; renderAssistantView(); };
+    pillHolder.appendChild(b);
+  });
+
+  const pickerCard = document.getElementById("assistantPickerCard");
+  const content = document.getElementById("assistantContent");
+  const filtered = applyFilters(records, "assistant");
+
+  if(tier==="employee"){
+    pickerCard.style.display = "none";
+    renderEmployeeAssistantTab(content, generateEmployeeInsights(currentUser.name, filtered), assistantSubTab);
+    return;
+  }
+
+  if(assistantSubTab==="team"){
+    pickerCard.style.display = "block";
+    const allowed = tier==="fullAccess" ? EMPLOYEES.map(e=>e.name) : (REGIONS[currentUser.region] ? REGIONS[currentUser.region].members : []);
+    document.getElementById("assistantPickerTitle").textContent = "انتخاب کارمند برای تحلیل";
+    const sel = document.getElementById("assistantEmployeeSelect");
+    if(!assistantSelectedEmployee || !allowed.includes(assistantSelectedEmployee)) assistantSelectedEmployee = allowed[0];
+    sel.innerHTML = allowed.map(nm=>`<option value="${nm}" ${nm===assistantSelectedEmployee?"selected":""}>${nm}</option>`).join("");
+    sel.onchange = ()=>{ assistantSelectedEmployee = sel.value; renderAssistantView(); };
+    renderManagerEmployeeInsightPanel(content, generateEmployeeInsights(assistantSelectedEmployee, filtered));
+  }else if(assistantSubTab==="regionCompare"){
+    pickerCard.style.display = "none";
+    renderRegionCompareAssistant(content, tier);
+  }else if(assistantSubTab==="strategic"){
+    pickerCard.style.display = "none";
+    renderStrategicAssistant(content);
+  }
+}
+
+/* ================= PREDICTION (پیش‌بینی و تحلیل رفتار پذیرندگان) — pure JS, no external API ================= */
+let predictionMetric = "amount"; // amount | transactions
+let predictionSelectedEmployee = "";
+
+function allowedPredictionEmployees(){
+  if(currentUser.role!=="manager") return [currentUser.name];
+  if(currentUser.fullAccess) return EMPLOYEES.map(e=>e.name);
+  return REGIONS[currentUser.region] ? REGIONS[currentUser.region].members : [];
+}
+// Builds each store's monthly series from whatever is currently in `records` — always computed
+// live, nothing cached, so a fresh upload with new months/stores is picked up automatically.
+// Grouped by uniqueKey() (شناسه when available, not store name), so two different terminals that
+// happen to share a store name are still tracked as separate series; the store name is only used
+// for display in the table.
+function buildStoreMonthlySeries(recs, metric){
+  const byStore = {};
+  recs.forEach(r=>{
+    if(!r.activityMonth) return;
+    const monthIdx = PERSIAN_MONTHS.indexOf(r.activityMonth);
+    if(monthIdx < 0) return;
+    const key = uniqueKey(r);
+    if(!byStore[key]){
+      byStore[key] = {
+        key, store:r.store, employee:r.employee, region:regionOfEmployee(r.employee), sector:r.sector||"نامشخص",
+        installMonthIdx: PERSIAN_MONTHS.indexOf(r.installMonth), monthly:{},
+      };
+    }
+    byStore[key].monthly[monthIdx] = (byStore[key].monthly[monthIdx]||0) + (Number(r[metric])||0);
+  });
+  return byStore;
+}
+// Trend = average of the EARLIER half of post-install active months vs average of the LATER half
+// (not just first-vs-last two points) — this follows the whole step-by-step trajectory and is far
+// less distorted by a single unusually low/high month than a raw endpoint comparison would be.
+// The install month itself is always excluded (installed در فروردین → بررسی از اردیبهشت به بعد).
+function computeStoreTrend(storeObj){
+  const installIdx = storeObj.installMonthIdx;
+  const months = Object.keys(storeObj.monthly).map(Number).sort((a,b)=>a-b);
+  const postInstall = months.filter(m => installIdx===undefined || installIdx<0 ? true : m > installIdx);
+  const series = postInstall.filter(m=>storeObj.monthly[m] > 0);
+  if(series.length < 2) return null;
+
+  const mid = Math.ceil(series.length/2);
+  const firstHalf = series.slice(0, mid);
+  const secondHalf = series.slice(mid);
+  if(secondHalf.length === 0) return null;
+  const firstHalfAvg = firstHalf.reduce((s,m)=>s+storeObj.monthly[m],0) / firstHalf.length;
+  const secondHalfAvg = secondHalf.reduce((s,m)=>s+storeObj.monthly[m],0) / secondHalf.length;
+  const changePct = firstHalfAvg ? ((secondHalfAvg-firstHalfAvg)/firstHalfAvg*100) : (secondHalfAvg>0 ? 100 : 0);
+  // If the earlier average is tiny relative to the later one, the % is mathematically inevitable
+  // but not very meaningful on its own — flag it so it's shown transparently, not hidden.
+  const lowBase = firstHalfAvg > 0 && firstHalfAvg < secondHalfAvg*0.05;
+
+  return {
+    firstHalfAvg, secondHalfAvg, changePct, lowBase, dataPoints: series.length,
+    firstMonth: PERSIAN_MONTHS[series[0]], lastMonth: PERSIAN_MONTHS[series[series.length-1]],
+    installMonth: installIdx>=0 ? PERSIAN_MONTHS[installIdx] : "نامشخص",
+  };
+}
+function computeSectorAverageTrends(scopeRecs, metric){
+  const byStore = buildStoreMonthlySeries(scopeRecs, metric);
+  const bySector = {};
+  Object.values(byStore).forEach(s=>{
+    const t = computeStoreTrend(s);
+    if(!t) return;
+    const sec = s.sector || "نامشخص";
+    if(!bySector[sec]) bySector[sec] = [];
+    bySector[sec].push(t.changePct);
+  });
+  const avgMap = {};
+  Object.keys(bySector).forEach(sec=> avgMap[sec] = bySector[sec].reduce((a,b)=>a+b,0)/bySector[sec].length);
+  return avgMap;
+}
+function renderPredictionView(){
+  const allowed = allowedPredictionEmployees();
+  const pickerHolder = document.getElementById("predictionPickerHolder");
+  const showingAll = currentUser.role==="manager" && !predictionSelectedEmployee;
+  if(currentUser.role==="manager"){
+    pickerHolder.style.display = "block";
+    const sel = document.getElementById("predictionEmployeeSelect");
+    if(predictionSelectedEmployee && !allowed.includes(predictionSelectedEmployee)) predictionSelectedEmployee = "";
+    sel.innerHTML = `<option value="">همه (${allowed.length} کارمند)</option>` + allowed.map(nm=>`<option value="${nm}" ${nm===predictionSelectedEmployee?"selected":""}>${nm}</option>`).join("");
+    sel.onchange = ()=>{ predictionSelectedEmployee = sel.value; renderPredictionView(); };
+  }else{
+    pickerHolder.style.display = "none";
+  }
+
+  const pillHolder = document.getElementById("predictionMetricPills");
+  pillHolder.innerHTML = "";
+  [["amount","مبلغ بازاریابی"],["transactions","تعداد تراکنش"]].forEach(([key,label])=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (predictionMetric===key ? " active":"");
+    b.textContent = label;
+    b.onclick = ()=>{ predictionMetric = key; renderPredictionView(); };
+    pillHolder.appendChild(b);
+  });
+
+  const targetEmployees = predictionSelectedEmployee ? [predictionSelectedEmployee] : allowed;
+  const scopeRecs = applyFilters(records, "prediction").filter(r=> targetEmployees.includes(r.employee));
+  const sectorAvgMap = computeSectorAverageTrends(scopeRecs, predictionMetric);
+  const byStore = buildStoreMonthlySeries(scopeRecs, predictionMetric);
+  const results = Object.values(byStore).map(s=>{
+    const trend = computeStoreTrend(s);
+    if(!trend) return null;
+    return {...s, ...trend, sectorAvgChangePct: sectorAvgMap[s.sector] ?? null};
+  }).filter(Boolean).filter(r=>Math.abs(r.changePct) >= 50);
+
+  // Sort: employee-specific view → by growth % descending (best to worst).
+  // "همه" view (managers) → grouped by employee name first, then growth % descending within each employee.
+  const sorted = results.slice().sort((a,b)=>{
+    if(showingAll && a.employee !== b.employee) return a.employee.localeCompare(b.employee, "fa");
+    return b.changePct - a.changePct;
+  });
+
+  const fmt = predictionMetric==="amount" ? fmtMoney : fmtNum;
+  document.getElementById("predictionSortNote").textContent = showingAll
+    ? "ترتیب نمایش: ابتدا بر اساس نام کارمند، و در داخل هر کارمند از بیشترین رشد به بیشترین افت."
+    : "ترتیب نمایش: از بیشترین رشد به بیشترین افت.";
+  document.getElementById("predictionAlertsBox").innerHTML = "";
+  document.getElementById("predictionTableBox").innerHTML = sorted.length ? `
+    <table><thead><tr><th>فروشگاه (شناسه)</th><th>کارمند</th><th>صنف</th><th>ماه نصب</th><th>بازه بررسی‌شده</th><th>میانگین نیمه اول</th><th>میانگین نیمه دوم</th><th>درصد تغییر فروشگاه</th><th>میانگین صنف</th><th>وضعیت</th></tr></thead>
+    <tbody>${sorted.map(r=>`<tr>
+      <td>${r.store}${r.lowBase ? ' <span class="pill warn" title="پایه محاسبه (میانگین نیمه اول) بسیار پایین بوده — این درصد را با احتیاط ببینید">⚠ پایه کم</span>' : ''}</td>
+      <td>${r.employee}</td><td>${r.sector}</td><td>${r.installMonth}</td>
+      <td>${r.firstMonth} تا ${r.lastMonth} (${r.dataPoints} ماه)</td>
+      <td>${fmt(r.firstHalfAvg)}</td><td>${fmt(r.secondHalfAvg)}</td>
+      <td>${r.changePct>=0?"+":""}${r.changePct.toFixed(1)}٪</td>
+      <td>${r.sectorAvgChangePct!==null ? (r.sectorAvgChangePct>=0?"+":"")+r.sectorAvgChangePct.toFixed(1)+"٪" : "—"}</td>
+      <td><span class="pill ${r.changePct>=0?'good':'warn'}">${r.changePct>=0?"رشد چشمگیر":"افت نگران‌کننده"}</span></td>
+    </tr>`).join("")}</tbody></table>` : `<div class="empty-state">در بازه فعلی، پذیرنده‌ای با تغییر ۵۰٪ یا بیشتر (نسبت به ماه‌های بعد از نصب) شناسایی نشد.</div>`;
 }
 
 /* ================= SEARCH ================= */
 function renderEmployeeDetailCard(name){
   const container = document.getElementById("searchDropdown");
-  const filtered = applyFilters(records);
+  const filtered = applyFilters(records, "search");
   const ranking = computeRanking(filtered);
   const mine = ranking.find(e=>e.employee===name);
   if(!mine){
@@ -2043,7 +2710,7 @@ function runSearch(){
   });
   availableValues("month").forEach(m=>{
     if(m.includes(q)){
-      results.push({label:"ماه: "+m, action:()=>{ box.classList.remove("open"); filters.months=new Set([m]); switchTab(currentUser.role==="manager"?"dashboard":"mydashboard"); }});
+      results.push({label:"ماه: "+m, action:()=>{ box.classList.remove("open"); const tid=currentUser.role==="manager"?"dashboard":"mydashboard"; getFilters(tid).months=new Set([m]); switchTab(tid); }});
     }
   });
   ["تعداد بازاریابی","مبلغ بازاریابی","تعداد تراکنش","بستر ارتباطی","ودیعه","مسدودی","رتبه‌بندی"].forEach(kw=>{
@@ -2052,11 +2719,11 @@ function runSearch(){
     }
   });
   if(currentUser.role==="manager"){
-    groupByField(applyFilters(records), "bank").forEach(g=>{
+    groupByField(applyFilters(records, "search"), "bank").forEach(g=>{
       if(g.value.includes(q)) results.push({label:"بانک: "+g.value, action:()=>{ box.classList.remove("open"); selectedBanks=new Set([g.value]); switchTab("banks"); }});
     });
-    groupByField(applyFilters(records), "sector").forEach(g=>{
-      if(g.value.includes(q)) results.push({label:"صنف: "+g.value, action:()=>{ box.classList.remove("open"); filters.sectors=new Set([g.value]); switchTab("sectors"); }});
+    groupByField(applyFilters(records, "search"), "sector").forEach(g=>{
+      if(g.value.includes(q)) results.push({label:"صنف: "+g.value, action:()=>{ box.classList.remove("open"); getFilters("sectors").sectors=new Set([g.value]); switchTab("sectors"); }});
     });
   }
   box.classList.add("open");
@@ -2457,10 +3124,7 @@ async function confirmMapping(){
   const saved = await supaSetAppData("performance_records", newRecords);
   if(saved){
     records = newRecords;
-    filters = {
-      months:new Set(), employees:new Set(), regions:new Set(), banks:new Set(), sectors:new Set(),
-      channels:new Set(), terminalStatuses:new Set(), outputMonthsAmount:new Set(), outputMonthsTx:new Set(),
-    };
+    filterStates = {}; // reset all per-tab filters since the underlying data just fully changed
     const storeCount = new Set(records.map(uniqueKey)).size;
     document.getElementById("mappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${storeCount} مورد (${records.length} رکورد پردازش‌شده) با موفقیت در پایگاه‌داده مشترک ذخیره شد و برای همه کاربران در دسترس است.</span>`;
     setTimeout(()=>{ document.getElementById("mappingCard").classList.add("hidden"); document.getElementById("excelInput").value=""; }, 1400);
@@ -2469,6 +3133,1026 @@ async function confirmMapping(){
     records = newRecords;
   }
 }
+
+/* ================= PM (Preventive Maintenance) — separate dataset, uploaded independently ================= */
+const PM_FIELDS = [
+  {key:"terminalId", label:"شماره ترمینال (شناسه یکتا)", required:true},
+  {key:"store", label:"نام فروشگاه", required:false},
+  {key:"address", label:"آدرس", required:false},
+  {key:"employee", label:"پشتیبان (کارمند)", required:true},
+  {key:"period", label:"عنوان دوره", required:true},
+  {key:"status", label:"وضعیت PM", required:true},
+  {key:"supportOrder", label:"دستور پشتیبانی", required:false},
+];
+const PM_FIELD_GUESS_HINTS = {
+  terminalId: ["شماره ترمینال","ترمینال"],
+  store: ["نام فروشگاه","فروشگاه"],
+  address: ["آدرس"],
+  employee: ["پشتیبان"],
+  period: ["عنوان دوره","دوره"],
+  status: ["وضعیت"],
+  supportOrder: ["دستور پشتیبانی","دستور"],
+};
+function pmGuessColumn(fieldKey, headers){
+  const hints = PM_FIELD_GUESS_HINTS[fieldKey] || [];
+  for(const h of hints){ const found = headers.find(col=>col.includes(h)); if(found) return found; }
+  return "";
+}
+function pickBestSheetGeneric(wb, hintsMap){
+  let best = wb.sheetNames[0], bestScore = -1;
+  wb.sheetNames.forEach(name=>{
+    const headers = wb.sheets[name].headers;
+    let score = 0;
+    Object.values(hintsMap).forEach(hints=> hints.forEach(h=>{ if(headers.some(col=>col.includes(h))) score++; }));
+    score += Math.min(wb.sheets[name].rows.length, 5000) / 100000;
+    if(score > bestScore){ bestScore = score; best = name; }
+  });
+  return best;
+}
+function classifyPmStatus(raw){
+  const s = (raw||"").toString().trim();
+  if(s.includes("تایید")) return "موفق";
+  if(s.includes("آماده پشتیبانی")) return "آماده پشتیبانی";
+  return "سایر";
+}
+function pmAvailableValues(field){
+  const set = new Set();
+  pmRecords.forEach(r=>{
+    if(field==="period") set.add(r.period);
+    if(field==="employee") set.add(r.employee);
+    if(field==="region") set.add(regionOfEmployee(r.employee));
+  });
+  return Array.from(set).filter(Boolean).sort();
+}
+function applyPmFilters(recs){
+  const filters = getFilters("pm");
+  return recs.filter(r=>{
+    if(filters.periods.size && !filters.periods.has(r.period)) return false;
+    if(filters.employees.size && !filters.employees.has(r.employee)) return false;
+    if(filters.regions.size && !filters.regions.has(regionOfEmployee(r.employee))) return false;
+    if(filters.pmStatus.size && !filters.pmStatus.has(classifyPmStatus(r.status))) return false;
+    return true;
+  });
+}
+function buildPmFilterBar(containerId){
+  const holder = document.getElementById(containerId);
+  holder.innerHTML = "";
+  const filters = getFilters("pm");
+  const defs = [
+    {key:"periods", label:"دوره", values: pmAvailableValues("period"), set:filters.periods},
+    {key:"employees", label:"پشتیبان", values: pmAvailableValues("employee"), set:filters.employees},
+    {key:"regions", label:"ناحیه", values: pmAvailableValues("region"), set:filters.regions},
+    {key:"pmStatus", label:"وضعیت PM", values:["موفق","آماده پشتیبانی"], set:filters.pmStatus},
+  ];
+  const section = document.createElement("div");
+  section.className = "filters-section";
+  section.innerHTML = `<div class="filters-section-title">فیلترها</div>`;
+  const bar = document.createElement("div");
+  bar.className = "filters-bar";
+  defs.forEach(d=>buildFilterGroup(bar, d, {}));
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "filters-reset";
+  resetBtn.textContent = "پاک‌کردن فیلترها";
+  resetBtn.onclick = ()=>{ Object.values(filters).forEach(s=>s.clear()); renderPmView(); };
+  bar.appendChild(resetBtn);
+  section.appendChild(bar);
+  holder.appendChild(section);
+}
+function pmGroupStats(recs, keyFn, labelFn){
+  const map = {};
+  recs.forEach(r=>{
+    const k = keyFn(r);
+    if(!map[k]) map[k] = {key:k, label:labelFn(r), total:0, success:0, ready:0};
+    map[k].total++;
+    const cls = classifyPmStatus(r.status);
+    if(cls==="موفق") map[k].success++;
+    else if(cls==="آماده پشتیبانی") map[k].ready++;
+  });
+  return Object.values(map).map(g=>({...g, successPct: g.total ? g.success/g.total*100 : 0}));
+}
+function pmScopedRecords(){
+  let scope = pmRecords;
+  if(currentUser.role!=="manager"){
+    scope = scope.filter(r=>r.employee===currentUser.name);
+  }else if(!currentUser.fullAccess){
+    const allowed = REGIONS[currentUser.region] ? REGIONS[currentUser.region].members : [];
+    scope = scope.filter(r=>allowed.includes(r.employee));
+  }
+  return scope;
+}
+function renderPmView(){
+  buildPmFilterBar("pmFiltersHolder");
+  const filtered = applyPmFilters(pmScopedRecords());
+
+  const overallList = pmGroupStats(filtered, ()=>"all", ()=>"کل");
+  const overall = overallList[0] || {total:0, success:0, ready:0, successPct:0};
+  document.getElementById("pmKpis").innerHTML = `
+    <div class="kpi-card"><div class="label">تعداد کل PM</div><div class="value">${fmtNum(overall.total)}</div></div>
+    <div class="kpi-card"><div class="label">تعداد موفق</div><div class="value">${fmtNum(overall.success)}</div></div>
+    <div class="kpi-card"><div class="label">درصد موفق</div><div class="value">${overall.successPct.toFixed(1)}٪</div></div>
+    <div class="kpi-card"><div class="label">تعداد آماده پشتیبانی</div><div class="value">${fmtNum(overall.ready)}</div></div>
+  `;
+
+  const byEmp = pmGroupStats(filtered, r=>r.employee, r=>r.employee).sort((a,b)=>b.successPct-a.successPct);
+  document.getElementById("pmEmployeeTableHolder").innerHTML = byEmp.length ? `
+    <table><thead><tr><th>کارمند</th><th>تعداد کل</th><th>تعداد موفق</th><th>درصد موفق</th><th>تعداد آماده پشتیبانی</th></tr></thead>
+    <tbody>${byEmp.map(e=>`<tr><td>${e.label}</td><td>${fmtNum(e.total)}</td><td>${fmtNum(e.success)}</td><td>${e.successPct.toFixed(1)}٪</td><td>${fmtNum(e.ready)}</td></tr>`).join("")}</tbody></table>
+  ` : `<div class="empty-state">داده‌ای موجود نیست.</div>`;
+  chartBars("chartPmEmployees", byEmp.map(e=>({label:e.label, value:e.successPct})), {formatter:v=>v.toFixed(1)+"٪", color:"#1e3a5f"});
+
+  renderPmPendingList(filtered);
+}
+function renderPmPendingList(filtered){
+  const pending = filtered.filter(r=>classifyPmStatus(r.status)==="آماده پشتیبانی")
+    .slice().sort((a,b)=> (a.address||"").localeCompare((b.address||""), "fa"));
+  const holder = document.getElementById("pmPendingHolder");
+  if(pending.length === 0){
+    holder.innerHTML = `<div class="empty-state">مورد مانده‌ای وجود ندارد.</div>`;
+    return;
+  }
+  if(pending.length > 100){
+    holder.innerHTML = `
+      <p class="small-note">تعداد موارد مانده (${fmtNum(pending.length)}) بیش از ۱۰۰ مورد است — برای جلوگیری از کندی رابط کاربری، لیست کامل را به‌صورت فایل اکسل دانلود کنید.</p>
+      <button class="btn-sm" id="pmExportBtn">⬇ دانلود لیست مانده‌ها (Excel)</button>`;
+    document.getElementById("pmExportBtn").onclick = ()=> downloadPendingXlsx(pending, "pm-pending-list");
+    return;
+  }
+  holder.innerHTML = `<div class="pm-mini-grid">${pending.map(r=>`
+    <div class="pm-mini-card">
+      <b>${r.store||"—"}</b>
+      ترمینال: ${r.terminalId||"—"}<br>
+      آدرس: ${r.address||"—"}<br>
+      پشتیبان: ${r.employee||"—"}
+    </div>`).join("")}</div>`;
+}
+/* ---- Minimal real .xlsx writer (no external library) — CRC32 + uncompressed ("stored") ZIP + OOXML ---- */
+function crc32Bytes(buf){
+  if(!crc32Bytes.table){
+    const table = new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      let c = n;
+      for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1);
+      table[n] = c>>>0;
+    }
+    crc32Bytes.table = table;
+  }
+  const table = crc32Bytes.table;
+  let crc = 0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++) crc = table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function buildZipStore(files){
+  const localParts = [], centralParts = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = ((now.getHours()<<11) | (now.getMinutes()<<5) | (now.getSeconds()>>1)) & 0xFFFF;
+  const dosDate = (((now.getFullYear()-1980)<<9) | ((now.getMonth()+1)<<5) | now.getDate()) & 0xFFFF;
+
+  files.forEach(f=>{
+    const nameBytes = new TextEncoder().encode(f.name);
+    const data = f.data;
+    const crc = crc32Bytes(data);
+    const size = data.length;
+
+    const lh = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true);
+    lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    lh.set(nameBytes, 30);
+    localParts.push(lh, data);
+
+    const ch = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(nameBytes, 46);
+    centralParts.push(ch);
+
+    offset += lh.length + data.length;
+  });
+
+  const centralStart = offset;
+  const centralSize = centralParts.reduce((s,p)=>s+p.length,0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, centralStart, true);
+
+  const allParts = [...localParts, ...centralParts, eocd];
+  const total = allParts.reduce((s,p)=>s+p.length,0);
+  const out = new Uint8Array(total);
+  let pos = 0;
+  allParts.forEach(p=>{ out.set(p, pos); pos += p.length; });
+  return out;
+}
+function xlsxEscape(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function buildXlsxBytes(sheetName, headers, rows){
+  function colLetter(idx){ let s="", i=idx+1; while(i>0){ const r=(i-1)%26; s=String.fromCharCode(65+r)+s; i=Math.floor((i-1)/26); } return s; }
+  const allRows = [headers, ...rows];
+  let rowsXml = "";
+  allRows.forEach((rowArr, rIdx)=>{
+    const rNum = rIdx+1;
+    let cellsXml = "";
+    rowArr.forEach((val, cIdx)=>{
+      const ref = colLetter(cIdx)+rNum;
+      if(typeof val === "number" && isFinite(val)){
+        cellsXml += `<c r="${ref}"><v>${val}</v></c>`;
+      }else{
+        cellsXml += `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xlsxEscape(val)}</t></is></c>`;
+      }
+    });
+    rowsXml += `<row r="${rNum}">${cellsXml}</row>`;
+  });
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rowsXml}</sheetData></worksheet>`;
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xlsxEscape(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+
+  const enc = new TextEncoder();
+  return buildZipStore([
+    {name:"[Content_Types].xml", data: enc.encode(contentTypes)},
+    {name:"_rels/.rels", data: enc.encode(rootRels)},
+    {name:"xl/workbook.xml", data: enc.encode(workbookXml)},
+    {name:"xl/_rels/workbook.xml.rels", data: enc.encode(workbookRels)},
+    {name:"xl/worksheets/sheet1.xml", data: enc.encode(sheetXml)},
+  ]);
+}
+function downloadXlsx(filename, sheetName, headers, rows){
+  const bytes = buildXlsxBytes(sheetName, headers, rows);
+  const blob = new Blob([bytes], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function downloadPendingXlsx(list, filenamePrefix){
+  const headers = ["نام فروشگاه","ترمینال","آدرس","پشتیبان","ناحیه","دوره"];
+  const rows = list.map(r=>[r.store, r.terminalId, r.address, r.employee, regionOfEmployee(r.employee), r.period]);
+  downloadXlsx(filenamePrefix+".xlsx", "مانده‌ها", headers, rows);
+}
+function renderPmRegionSection(){
+  const byRegion = {};
+  Object.keys(REGIONS).forEach(rn=> byRegion[rn] = {region:rn, total:0, success:0, ready:0});
+  pmRecords.forEach(r=>{
+    const rn = regionOfEmployee(r.employee);
+    if(!byRegion[rn]) return;
+    byRegion[rn].total++;
+    const cls = classifyPmStatus(r.status);
+    if(cls==="موفق") byRegion[rn].success++;
+    else if(cls==="آماده پشتیبانی") byRegion[rn].ready++;
+  });
+  const list = Object.values(byRegion).map(r=>({...r, successPct: r.total ? r.success/r.total*100 : 0}));
+  list.sort((a,b)=>b.successPct-a.successPct);
+  list.forEach((r,i)=> r.rank=i+1);
+
+  const tableHolder = document.getElementById("pmRegionTableHolder");
+  if(!tableHolder) return;
+  tableHolder.innerHTML = pmRecords.length ? `
+    <table><thead><tr><th>رتبه</th><th>ناحیه</th><th>مسئول</th><th>تعداد کل PM</th><th>تعداد موفق</th><th>درصد انجام</th><th>تعداد مانده</th></tr></thead>
+    <tbody>${list.map(r=>{
+      const badgeClass = r.rank===1?"gold":r.rank===2?"silver":r.rank===3?"bronze":"";
+      return `<tr><td><span class="rank-badge ${badgeClass}">${r.rank}</span></td><td>${r.region}</td><td>${REGIONS[r.region].manager}</td><td>${fmtNum(r.total)}</td><td>${fmtNum(r.success)}</td><td>${r.successPct.toFixed(1)}٪</td><td>${fmtNum(r.ready)}</td></tr>`;
+    }).join("")}</tbody></table>` : `<div class="empty-state">داده PM موجود نیست.</div>`;
+  chartBars("chartPmRegions", list.map(r=>({label:r.region, value:r.successPct})), {formatter:v=>v.toFixed(1)+"٪", color:"#2e7d5b"});
+}
+
+/* ================= COLLECTION (جمع‌آوری) — same pmRecords, filtered by "دستور پشتیبانی" column ================= */
+function isCollectionOrder(r){
+  const s = (r.supportOrder||"").replace(/\u200c/g," ").trim();
+  return s.includes("جمع آوری");
+}
+function collectionScopedRecords(){
+  return pmScopedRecords().filter(isCollectionOrder);
+}
+function collectionAvailableValues(field){
+  const set = new Set();
+  pmRecords.filter(isCollectionOrder).forEach(r=>{
+    if(field==="period") set.add(r.period);
+    if(field==="employee") set.add(r.employee);
+    if(field==="region") set.add(regionOfEmployee(r.employee));
+  });
+  return Array.from(set).filter(Boolean).sort();
+}
+function applyCollectionFilters(recs){
+  const filters = getFilters("collection");
+  return recs.filter(r=>{
+    if(filters.periods.size && !filters.periods.has(r.period)) return false;
+    if(filters.employees.size && !filters.employees.has(r.employee)) return false;
+    if(filters.regions.size && !filters.regions.has(regionOfEmployee(r.employee))) return false;
+    if(filters.pmStatus.size && !filters.pmStatus.has(classifyPmStatus(r.status))) return false;
+    return true;
+  });
+}
+function buildCollectionFilterBar(containerId){
+  const holder = document.getElementById(containerId);
+  holder.innerHTML = "";
+  const filters = getFilters("collection");
+  const defs = [
+    {key:"periods", label:"دوره", values: collectionAvailableValues("period"), set:filters.periods},
+    {key:"employees", label:"پشتیبان", values: collectionAvailableValues("employee"), set:filters.employees},
+    {key:"regions", label:"ناحیه", values: collectionAvailableValues("region"), set:filters.regions},
+    {key:"pmStatus", label:"وضعیت", values:["موفق","آماده پشتیبانی"], set:filters.pmStatus},
+  ];
+  const section = document.createElement("div");
+  section.className = "filters-section";
+  section.innerHTML = `<div class="filters-section-title">فیلترها</div>`;
+  const bar = document.createElement("div");
+  bar.className = "filters-bar";
+  defs.forEach(d=>buildFilterGroup(bar, d, {}));
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "filters-reset";
+  resetBtn.textContent = "پاک‌کردن فیلترها";
+  resetBtn.onclick = ()=>{ Object.values(filters).forEach(s=>s.clear()); renderCollectionView(); };
+  bar.appendChild(resetBtn);
+  section.appendChild(bar);
+  holder.appendChild(section);
+}
+function renderCollectionView(){
+  buildCollectionFilterBar("collectionFiltersHolder");
+  const filtered = applyCollectionFilters(collectionScopedRecords());
+
+  const overallList = pmGroupStats(filtered, ()=>"all", ()=>"کل");
+  const overall = overallList[0] || {total:0, success:0, ready:0, successPct:0};
+  const remaining = overall.total - overall.success;
+  const remainingPct = overall.total ? (remaining/overall.total*100) : 0;
+  document.getElementById("collectionKpis").innerHTML = `
+    <div class="kpi-card"><div class="label">تعداد کل جمع‌آوری</div><div class="value">${fmtNum(overall.total)}</div></div>
+    <div class="kpi-card"><div class="label">انجام‌شده (تعداد و درصد)</div><div class="value">${fmtNum(overall.success)} <span style="font-size:14px;color:var(--muted);">(${overall.successPct.toFixed(1)}٪)</span></div></div>
+    <div class="kpi-card"><div class="label">مانده (تعداد و درصد)</div><div class="value">${fmtNum(remaining)} <span style="font-size:14px;color:var(--muted);">(${remainingPct.toFixed(1)}٪)</span></div></div>
+  `;
+
+  const byEmp = pmGroupStats(filtered, r=>r.employee, r=>r.employee).sort((a,b)=>b.successPct-a.successPct);
+  document.getElementById("collectionEmployeeTableHolder").innerHTML = byEmp.length ? `
+    <table><thead><tr><th>کارمند</th><th>تعداد کل</th><th>تعداد انجام‌شده</th><th>درصد انجام</th><th>تعداد مانده</th></tr></thead>
+    <tbody>${byEmp.map(e=>`<tr><td>${e.label}</td><td>${fmtNum(e.total)}</td><td>${fmtNum(e.success)}</td><td>${e.successPct.toFixed(1)}٪</td><td>${fmtNum(e.total-e.success)}</td></tr>`).join("")}</tbody></table>
+  ` : `<div class="empty-state">داده‌ای موجود نیست.</div>`;
+  chartBars("chartCollectionEmployees", byEmp.map(e=>({label:e.label, value:e.successPct})), {formatter:v=>v.toFixed(1)+"٪", color:"#2e7d5b"});
+
+  renderCollectionPendingList(filtered);
+}
+function renderCollectionPendingList(filtered){
+  const pending = filtered.filter(r=>classifyPmStatus(r.status)!=="موفق")
+    .slice().sort((a,b)=> (a.address||"").localeCompare((b.address||""), "fa"));
+  const holder = document.getElementById("collectionPendingHolder");
+  if(pending.length === 0){
+    holder.innerHTML = `<div class="empty-state">مورد مانده‌ای وجود ندارد.</div>`;
+    return;
+  }
+  if(pending.length > 100){
+    holder.innerHTML = `
+      <p class="small-note">تعداد موارد مانده (${fmtNum(pending.length)}) بیش از ۱۰۰ مورد است — برای جلوگیری از کندی رابط کاربری، لیست کامل را به‌صورت فایل اکسل دانلود کنید.</p>
+      <button class="btn-sm" id="collectionExportBtn">⬇ دانلود لیست مانده‌ها (Excel)</button>`;
+    document.getElementById("collectionExportBtn").onclick = ()=> downloadPendingXlsx(pending, "collection-pending-list");
+    return;
+  }
+  holder.innerHTML = `<div class="pm-mini-grid">${pending.map(r=>`
+    <div class="pm-mini-card">
+      <b>${r.store||"—"}</b>
+      ترمینال: ${r.terminalId||"—"}<br>
+      آدرس: ${r.address||"—"}<br>
+      پشتیبان: ${r.employee||"—"}
+    </div>`).join("")}</div>`;
+}
+function renderCollectionRegionSection(){
+  const collectionRecs = pmRecords.filter(isCollectionOrder);
+  const byRegion = {};
+  Object.keys(REGIONS).forEach(rn=> byRegion[rn] = {region:rn, total:0, success:0});
+  collectionRecs.forEach(r=>{
+    const rn = regionOfEmployee(r.employee);
+    if(!byRegion[rn]) return;
+    byRegion[rn].total++;
+    if(classifyPmStatus(r.status)==="موفق") byRegion[rn].success++;
+  });
+  const list = Object.values(byRegion).map(r=>({...r, remaining:r.total-r.success, successPct: r.total ? r.success/r.total*100 : 0}));
+  list.sort((a,b)=>b.successPct-a.successPct);
+  list.forEach((r,i)=> r.rank=i+1);
+
+  const tableHolder = document.getElementById("collectionRegionTableHolder");
+  if(!tableHolder) return;
+  tableHolder.innerHTML = collectionRecs.length ? `
+    <table><thead><tr><th>رتبه</th><th>ناحیه</th><th>مسئول</th><th>تعداد کل</th><th>تعداد انجام‌شده</th><th>درصد انجام</th><th>تعداد مانده</th></tr></thead>
+    <tbody>${list.map(r=>{
+      const badgeClass = r.rank===1?"gold":r.rank===2?"silver":r.rank===3?"bronze":"";
+      return `<tr><td><span class="rank-badge ${badgeClass}">${r.rank}</span></td><td>${r.region}</td><td>${REGIONS[r.region].manager}</td><td>${fmtNum(r.total)}</td><td>${fmtNum(r.success)}</td><td>${r.successPct.toFixed(1)}٪</td><td>${fmtNum(r.remaining)}</td></tr>`;
+    }).join("")}</tbody></table>` : `<div class="empty-state">داده جمع‌آوری موجود نیست.</div>`;
+  chartBars("chartCollectionRegions", list.map(r=>({label:r.region, value:r.successPct})), {formatter:v=>v.toFixed(1)+"٪", color:"#4472a8"});
+}
+
+/* ---- PM upload/mapping (Mojtaba only, mirrors the marketing upload flow) ---- */
+let pmWorkbookData = null;
+let pmSelectedSheet = "";
+async function handlePmFileSelect(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  document.getElementById("pmMappingCard").classList.add("hidden");
+  const ext = (file.name.split(".").pop()||"").toLowerCase();
+  try{
+    if(ext !== "xlsx" && ext !== "csv"){
+      throw new Error("فرمت فایل پشتیبانی نمی‌شود. لطفاً فایل xlsx یا csv بارگذاری کنید.");
+    }
+    const buffer = await file.arrayBuffer();
+    const wb = ext === "csv" ? parseCsv(new TextDecoder("utf-8").decode(buffer)) : await parseXlsxZip(buffer);
+    if(!wb.sheetNames.length){ throw new Error("فایل خالی است یا هیچ Sheet قابل‌خواندنی ندارد."); }
+    pmWorkbookData = wb;
+    pmSelectedSheet = pickBestSheetGeneric(wb, PM_FIELD_GUESS_HINTS);
+    showPmMappingUI();
+  }catch(err){
+    console.error(err);
+    alert("خطا در خواندن فایل: " + err.message);
+  }
+}
+function showPmMappingUI(){
+  const card = document.getElementById("pmMappingCard");
+  card.classList.remove("hidden");
+  let sheetHolder = document.getElementById("pmSheetSelectHolder");
+  if(!sheetHolder){
+    sheetHolder = document.createElement("div");
+    sheetHolder.id = "pmSheetSelectHolder";
+    sheetHolder.style.marginBottom = "16px";
+    card.insertBefore(sheetHolder, document.getElementById("pmMappingRows"));
+  }
+  sheetHolder.innerHTML = `
+    <label style="display:block;font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">انتخاب Sheet از فایل PM</label>
+    <select id="pmSheetSelect" style="width:100%;max-width:360px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;">
+      ${pmWorkbookData.sheetNames.map(n=>`<option value="${n}" ${n===pmSelectedSheet?"selected":""}>${n} — ${pmWorkbookData.sheets[n].rows.length} ردیف</option>`).join("")}
+    </select>`;
+  document.getElementById("pmSheetSelect").onchange = (e)=>{ pmSelectedSheet = e.target.value; renderPmMappingFieldsForSheet(); };
+  renderPmMappingFieldsForSheet();
+}
+function renderPmMappingFieldsForSheet(){
+  const sheet = pmWorkbookData.sheets[pmSelectedSheet];
+  const holder = document.getElementById("pmMappingRows");
+  holder.innerHTML = "";
+  PM_FIELDS.forEach(f=>{
+    const row = document.createElement("div");
+    row.className = "map-row";
+    const guess = pmGuessColumn(f.key, sheet.headers);
+    row.innerHTML = `
+      <label>${f.label}${f.required?'<span class="badge-req">*</span>':""}</label>
+      <select data-field="${f.key}">
+        <option value="">— انتخاب نشده —</option>
+        ${sheet.headers.map(h=>`<option value="${h}" ${h===guess?"selected":""}>${h}</option>`).join("")}
+      </select>`;
+    holder.appendChild(row);
+  });
+  document.getElementById("pmMappingMsg").textContent = `${sheet.rows.length} ردیف در Sheet «${pmSelectedSheet}» شناسایی شد.`;
+}
+function cancelPmUpload(){
+  document.getElementById("pmMappingCard").classList.add("hidden");
+  document.getElementById("pmExcelInput").value = "";
+  pmWorkbookData = null; pmSelectedSheet = "";
+  const sheetHolder = document.getElementById("pmSheetSelectHolder");
+  if(sheetHolder) sheetHolder.remove();
+}
+async function confirmPmMapping(){
+  const sheet = pmWorkbookData.sheets[pmSelectedSheet];
+  const rows = sheet.rows;
+  const selects = document.querySelectorAll("#pmMappingRows select");
+  const mapping = {};
+  selects.forEach(s=> mapping[s.dataset.field] = s.value);
+  const missing = PM_FIELDS.filter(f=>f.required && !mapping[f.key]);
+  if(missing.length){
+    document.getElementById("pmMappingMsg").innerHTML = `<span style="color:var(--warn);">لطفاً فیلدهای الزامی را تطبیق دهید: ${missing.map(m=>m.label).join("، ")}</span>`;
+    return;
+  }
+  const employeeNames = EMPLOYEES.map(e=>e.name);
+  function matchEmployee(rawEmpIn){
+    const rawEmp = String(rawEmpIn||"").trim();
+    return employeeNames.find(n=> rawEmp===n || rawEmp.includes(n) || n.includes(rawEmp)) || rawEmp || "نامشخص";
+  }
+  const newPmRecords = rows.map(row=>({
+    terminalId: String(row[mapping.terminalId]||"").trim(),
+    store: mapping.store ? String(row[mapping.store]||"").trim() : "",
+    address: mapping.address ? String(row[mapping.address]||"").trim() : "",
+    employee: matchEmployee(row[mapping.employee]),
+    period: String(row[mapping.period]||"").trim(),
+    status: String(row[mapping.status]||"").trim(),
+    supportOrder: mapping.supportOrder ? String(row[mapping.supportOrder]||"").trim() : "",
+  })).filter(r=>r.terminalId);
+
+  document.getElementById("pmMappingMsg").innerHTML = `در حال ذخیره در پایگاه‌داده مشترک...`;
+  const saved = await supaSetAppData("pm_records", newPmRecords);
+  if(saved){
+    pmRecords = newPmRecords;
+    filterStates["pm"] = emptyPmFilterSet();
+    document.getElementById("pmMappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${newPmRecords.length} رکورد PM با موفقیت ذخیره شد و برای همه کاربران در دسترس است.</span>`;
+    setTimeout(()=>{ document.getElementById("pmMappingCard").classList.add("hidden"); document.getElementById("pmExcelInput").value=""; }, 1400);
+  }else{
+    pmRecords = newPmRecords;
+    document.getElementById("pmMappingMsg").innerHTML = `<span style="color:var(--warn);">⚠ داده پردازش شد اما ذخیره در پایگاه‌داده مشترک ناموفق بود.</span>`;
+  }
+}
+
+/* ================= JALALI (Persian) CALENDAR CONVERSION — standard algorithm, pure JS ================= */
+function jDiv(a,b){ return ~~(a/b); }
+function jMod(a,b){ return a - b*Math.floor(a/b); }
+function jalCal(jy){
+  const breaks = [-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+  const bl = breaks.length;
+  const gy = jy + 621;
+  let leapJ = -14, jp = breaks[0], jump = 0;
+  for(let i=1;i<bl;i++){
+    const jm = breaks[i];
+    jump = jm - jp;
+    if(jy < jm) break;
+    leapJ = leapJ + jDiv(jump,33)*8 + jDiv(jMod(jump,33),4);
+    jp = jm;
+  }
+  let n = jy - jp;
+  leapJ = leapJ + jDiv(n,33)*8 + jDiv(jMod(n,33)+3,4);
+  if(jMod(jump,33)===4 && jump-n===4) leapJ += 1;
+  const leapG = jDiv(gy,4) - jDiv((jDiv(gy,100)+1)*3,4) - 150;
+  const march = 20 + leapJ - leapG;
+  if(jump - n < 6) n = n - jump + jDiv(jump,33)*33;
+  let leap = jMod(jMod(n+1,33)-1,4);
+  if(leap === -1) leap = 4;
+  return {leap, gy, march};
+}
+function g2d(gy,gm,gd){
+  let d = jDiv((gy+jDiv(gm-8,6)+100100)*1461,4) + jDiv(153*jMod(gm+9,12)+2,5) + gd - 34840408;
+  d = d - jDiv(jDiv(gy+jDiv(gm-8,6)+100100,100)*3,4) + 752;
+  return d;
+}
+function d2g(jdn){
+  let j = 4*jdn + 139361631;
+  j = j + jDiv(jDiv(4*jdn+183187720,146097)*3,4)*4 - 3908;
+  const i = jDiv(jMod(j,1461),4)*5 + 308;
+  const gd = jDiv(jMod(i,153),5) + 1;
+  const gm = jMod(jDiv(i,153),12) + 1;
+  const gy = jDiv(j,1461) - 100100 + jDiv(8-gm,6);
+  return {gy, gm, gd};
+}
+function j2d(jy,jm,jd){
+  const r = jalCal(jy);
+  return g2d(r.gy,3,r.march) + (jm-1)*31 - jDiv(jm,7)*(jm-7) + jd - 1;
+}
+function d2j(jdn){
+  const gy = d2g(jdn).gy;
+  let jy = gy - 621;
+  const r = jalCal(jy);
+  const jdn1f = g2d(gy,3,r.march);
+  let jm, jd, k = jdn - jdn1f;
+  if(k >= 0){
+    if(k <= 185){ jm = 1 + jDiv(k,31); jd = jMod(k,31) + 1; return {jy,jm,jd}; }
+    k -= 186;
+  }else{
+    jy -= 1; k += 179;
+    if(r.leap === 1) k += 1;
+  }
+  jm = 7 + jDiv(k,30);
+  jd = jMod(k,30) + 1;
+  return {jy,jm,jd};
+}
+function toJalaali(gy,gm,gd){ return d2j(g2d(gy,gm,gd)); }
+function toGregorian(jy,jm,jd){ return d2g(j2d(jy,jm,jd)); }
+function isoToShamsi(iso){
+  const [gy,gm,gd] = iso.split("-").map(Number);
+  return toJalaali(gy,gm,gd);
+}
+function shamsiToIso(jy,jm,jd){
+  const g = toGregorian(jy,jm,jd);
+  return `${g.gy}-${String(g.gm).padStart(2,"0")}-${String(g.gd).padStart(2,"0")}`;
+}
+const JALALI_MONTH_NAMES = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+function formatShamsi(jy,jm,jd){ return `${jy}/${String(jm).padStart(2,"0")}/${String(jd).padStart(2,"0")}`; }
+function formatShamsiLong(jy,jm,jd){ return `${jd} ${JALALI_MONTH_NAMES[jm-1]} ${jy}`; }
+function todayShamsi(){
+  const now = new Date();
+  return toJalaali(now.getFullYear(), now.getMonth()+1, now.getDate());
+}
+
+/* ================= DAILY PERFORMANCE (عملکرد روزانه) ================= */
+const DAILY_INDICATORS = [
+  {key:"pm", label:"PM"},
+  {key:"em", label:"EM"},
+  {key:"install", label:"نصب"},
+  {key:"collectionRequired", label:"الزام به جمع‌آوری"},
+  {key:"marketing", label:"بازاریابی"},
+  {key:"kahroba", label:"کهربا"},
+  {key:"rollSale", label:"فروش رول"},
+  {key:"simSale", label:"فروش سیم‌کارت"},
+  {key:"rasis", label:"رسیس"},
+  {key:"sepPlus", label:"سپ پلاس"},
+];
+let dailyPerfSubTab = "add";
+let dpAddSelectedEmployee = "";
+let dpReportSelectedEmployee = "";
+let dpTrendSelectedEmployees = new Set();
+let dpTrendIndicator = "pm";
+let dpDateFrom = null, dpDateTo = null; // {jy,jm,jd}
+let taskFormEmployee = "";
+
+function allowedDailyPerfEmployees(){
+  if(currentUser.role!=="manager") return [currentUser.name];
+  if(currentUser.fullAccess) return EMPLOYEES.map(e=>e.name);
+  return REGIONS[currentUser.region] ? REGIONS[currentUser.region].members : [];
+}
+function dailyPerfScopedRecords(){
+  const allowed = allowedDailyPerfEmployees();
+  return dailyPerfRecords.filter(r=>allowed.includes(r.employee));
+}
+function tasksScopedForUser(){
+  const allowed = allowedDailyPerfEmployees();
+  return pendingTasks.filter(t=>allowed.includes(t.employee));
+}
+
+function renderDailyPerfView(){
+  const isManager = currentUser.role==="manager";
+  const tabs = isManager
+    ? [{id:"add",label:"افزودن عملکرد"},{id:"report",label:"گزارش عملکرد"},{id:"trend",label:"روند عملکرد"},{id:"pending",label:"کارهای در انتظار"}]
+    : [{id:"report",label:"گزارش عملکرد"},{id:"trend",label:"روند عملکرد"},{id:"pending",label:"کارهای در انتظار"}];
+  if(!tabs.find(t=>t.id===dailyPerfSubTab)) dailyPerfSubTab = tabs[0].id;
+
+  const pillHolder = document.getElementById("dpSubTabs");
+  pillHolder.innerHTML = "";
+  tabs.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (dailyPerfSubTab===t.id ? " active":"");
+    b.textContent = t.label;
+    b.onclick = ()=>{ dailyPerfSubTab = t.id; renderDailyPerfView(); };
+    pillHolder.appendChild(b);
+  });
+
+  const content = document.getElementById("dpContent");
+  if(dailyPerfSubTab==="add") renderDpAddForm(content);
+  else if(dailyPerfSubTab==="report") renderDpReport(content);
+  else if(dailyPerfSubTab==="trend") renderDpTrend(content);
+  else if(dailyPerfSubTab==="pending") renderPendingTasksView(content);
+}
+
+/* ---- Add (مدیر منطقه فقط) ---- */
+function renderDpAddForm(content){
+  const allowed = allowedDailyPerfEmployees();
+  if(!dpAddSelectedEmployee || !allowed.includes(dpAddSelectedEmployee)) dpAddSelectedEmployee = allowed[0]||"";
+  const t = todayShamsi();
+  if(!window.__dpFormDate) window.__dpFormDate = {jy:t.jy, jm:t.jm, jd:t.jd};
+  const fd = window.__dpFormDate;
+
+  const existing = dailyPerfRecords.find(r=> r.employee===dpAddSelectedEmployee && r.dateIso===shamsiToIso(fd.jy,fd.jm,fd.jd));
+
+  const yearOptions = []; for(let y=t.jy-1; y<=t.jy+1; y++) yearOptions.push(y);
+
+  content.innerHTML = `
+    <div class="section-card">
+      <h3>افزودن عملکرد روزانه</h3>
+      <div class="form-grid">
+        <div class="full">
+          <label>پشتیبان</label>
+          <select id="dpEmpSelect">${allowed.map(nm=>`<option value="${nm}" ${nm===dpAddSelectedEmployee?"selected":""}>${nm}</option>`).join("")}</select>
+        </div>
+        <div>
+          <label>روز</label>
+          <select id="dpDaySelect">${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}" ${d===fd.jd?"selected":""}>${d}</option>`).join("")}</select>
+        </div>
+        <div>
+          <label>ماه</label>
+          <select id="dpMonthSelect">${JALALI_MONTH_NAMES.map((m,i)=>`<option value="${i+1}" ${i+1===fd.jm?"selected":""}>${m}</option>`).join("")}</select>
+        </div>
+        <div>
+          <label>سال</label>
+          <select id="dpYearSelect">${yearOptions.map(y=>`<option value="${y}" ${y===fd.jy?"selected":""}>${y}</option>`).join("")}</select>
+        </div>
+      </div>
+      ${existing ? `<p class="small-note" style="color:var(--warn);">⚠ برای این پشتیبان در این تاریخ قبلاً رکوردی ثبت شده — مقادیر فعلی برای ویرایش بارگذاری شد؛ ثبت دوباره همان رکورد را به‌روزرسانی می‌کند.</p>` : ""}
+      <div class="form-grid" style="margin-top:10px;">
+        ${DAILY_INDICATORS.map(ind=>`
+          <div>
+            <label>${ind.label}</label>
+            <input type="number" min="0" step="1" id="dpField_${ind.key}" value="${existing ? (existing[ind.key]||0) : 0}">
+          </div>`).join("")}
+      </div>
+      <button class="btn-sm" style="margin-top:14px;" onclick="submitDailyPerf()">${existing?"به‌روزرسانی رکورد":"ثبت عملکرد"}</button>
+      <div id="dpAddMsg" class="small-note"></div>
+    </div>`;
+
+  document.getElementById("dpEmpSelect").onchange = (e)=>{ dpAddSelectedEmployee = e.target.value; renderDpAddForm(content); };
+  document.getElementById("dpDaySelect").onchange = (e)=>{ fd.jd = Number(e.target.value); renderDpAddForm(content); };
+  document.getElementById("dpMonthSelect").onchange = (e)=>{ fd.jm = Number(e.target.value); renderDpAddForm(content); };
+  document.getElementById("dpYearSelect").onchange = (e)=>{ fd.jy = Number(e.target.value); renderDpAddForm(content); };
+}
+async function submitDailyPerf(){
+  const fd = window.__dpFormDate;
+  const dateIso = shamsiToIso(fd.jy, fd.jm, fd.jd);
+  const dateShamsi = formatShamsi(fd.jy, fd.jm, fd.jd);
+  const rec = {
+    employee: dpAddSelectedEmployee,
+    manager: currentUser.name,
+    dateIso, dateShamsi,
+    loggedAt: new Date().toISOString(),
+  };
+  DAILY_INDICATORS.forEach(ind=>{
+    rec[ind.key] = Number(document.getElementById("dpField_"+ind.key).value) || 0;
+  });
+
+  const msgEl = document.getElementById("dpAddMsg");
+  msgEl.textContent = "در حال ذخیره...";
+  const newList = dailyPerfRecords.filter(r=> !(r.employee===rec.employee && r.dateIso===rec.dateIso));
+  newList.push(rec);
+  const saved = await supaSetAppData("daily_perf_records", newList);
+  if(saved){
+    dailyPerfRecords = newList;
+    msgEl.innerHTML = `<span style="color:var(--good);">✔ عملکرد ${rec.employee} برای تاریخ ${rec.dateShamsi} ثبت شد.</span>`;
+  }else{
+    msgEl.innerHTML = `<span style="color:var(--warn);">⚠ ذخیره ناموفق بود — اتصال را بررسی کنید.</span>`;
+  }
+}
+
+/* ---- Report ---- */
+function renderDpReport(content){
+  const allowed = allowedDailyPerfEmployees();
+  const isManager = currentUser.role==="manager";
+  const scoped = dailyPerfScopedRecords();
+
+  const t = todayShamsi();
+  if(!dpDateFrom) dpDateFrom = {jy:t.jy, jm:1, jd:1};
+  if(!dpDateTo) dpDateTo = {jy:t.jy, jm:t.jm, jd:t.jd};
+
+  let filtered = scoped.filter(r=>{
+    const iso = r.dateIso;
+    return iso >= shamsiToIso(dpDateFrom.jy,dpDateFrom.jm,dpDateFrom.jd) && iso <= shamsiToIso(dpDateTo.jy,dpDateTo.jm,dpDateTo.jd);
+  });
+  if(!isManager) filtered = filtered.filter(r=>r.employee===currentUser.name);
+  else if(dpReportSelectedEmployee) filtered = filtered.filter(r=>r.employee===dpReportSelectedEmployee);
+
+  const byEmp = {};
+  filtered.forEach(r=>{
+    if(!byEmp[r.employee]) byEmp[r.employee] = {employee:r.employee, total:0, sums:{}};
+    DAILY_INDICATORS.forEach(ind=>{
+      byEmp[r.employee].sums[ind.key] = (byEmp[r.employee].sums[ind.key]||0) + (r[ind.key]||0);
+      byEmp[r.employee].total += (r[ind.key]||0);
+    });
+  });
+  const rows = Object.values(byEmp).sort((a,b)=>b.total-a.total);
+  rows.forEach((r,i)=> r.rank=i+1);
+
+  content.innerHTML = `
+    <div class="section-card">
+      <h3>فیلتر گزارش</h3>
+      <div class="form-grid">
+        ${isManager ? `<div class="full"><label>پشتیبان</label><select id="dpReportEmpSelect"><option value="">همه</option>${allowed.map(nm=>`<option value="${nm}" ${nm===dpReportSelectedEmployee?"selected":""}>${nm}</option>`).join("")}</select></div>` : ""}
+        <div><label>از روز</label><select id="dpFromDay">${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}" ${d===dpDateFrom.jd?"selected":""}>${d}</option>`).join("")}</select></div>
+        <div><label>از ماه</label><select id="dpFromMonth">${JALALI_MONTH_NAMES.map((m,i)=>`<option value="${i+1}" ${i+1===dpDateFrom.jm?"selected":""}>${m}</option>`).join("")}</select></div>
+        <div><label>از سال</label><select id="dpFromYear">${[t.jy-1,t.jy,t.jy+1].map(y=>`<option value="${y}" ${y===dpDateFrom.jy?"selected":""}>${y}</option>`).join("")}</select></div>
+        <div><label>تا روز</label><select id="dpToDay">${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${d}" ${d===dpDateTo.jd?"selected":""}>${d}</option>`).join("")}</select></div>
+        <div><label>تا ماه</label><select id="dpToMonth">${JALALI_MONTH_NAMES.map((m,i)=>`<option value="${i+1}" ${i+1===dpDateTo.jm?"selected":""}>${m}</option>`).join("")}</select></div>
+        <div><label>تا سال</label><select id="dpToYear">${[t.jy-1,t.jy,t.jy+1].map(y=>`<option value="${y}" ${y===dpDateTo.jy?"selected":""}>${y}</option>`).join("")}</select></div>
+      </div>
+    </div>
+    <div class="section-card">
+      <h3>جدول عملکرد</h3>
+      <div id="dpReportTableHolder"></div>
+    </div>
+    <div class="section-card hidden" id="dpDailyDetailCard">
+      <h3 id="dpDailyDetailTitle"></h3>
+      <div id="dpDailyDetailHolder"></div>
+    </div>`;
+
+  const tableHolder = document.getElementById("dpReportTableHolder");
+  tableHolder.innerHTML = rows.length ? `
+    <table><thead><tr><th>رتبه</th><th>پشتیبان</th>${DAILY_INDICATORS.map(ind=>`<th>${ind.label}</th>`).join("")}<th>جمع کل</th></tr></thead>
+    <tbody>${rows.map(r=>{
+      const badgeClass = r.rank===1?"gold":r.rank===2?"silver":r.rank===3?"bronze":"";
+      return `<tr style="cursor:pointer;" onclick="showDpDailyDetail('${r.employee}')">
+        <td><span class="rank-badge ${badgeClass}">${r.rank}</span></td><td>${r.employee}</td>
+        ${DAILY_INDICATORS.map(ind=>`<td>${fmtNum(r.sums[ind.key]||0)}</td>`).join("")}
+        <td><strong>${fmtNum(r.total)}</strong></td>
+      </tr>`;
+    }).join("")}</tbody></table>
+    <p class="small-note">برای دیدن جزئیات روزانه هر پشتیبان، روی ردیفش کلیک کنید.</p>` : `<div class="empty-state">داده‌ای در این بازه موجود نیست.</div>`;
+
+  window.__dpReportFiltered = filtered;
+
+  if(isManager) document.getElementById("dpReportEmpSelect").onchange = (e)=>{ dpReportSelectedEmployee = e.target.value; renderDpReport(content); };
+  ["dpFromDay","dpFromMonth","dpFromYear","dpToDay","dpToMonth","dpToYear"].forEach(id=>{
+    document.getElementById(id).onchange = ()=>{
+      dpDateFrom = {jy:Number(document.getElementById("dpFromYear").value), jm:Number(document.getElementById("dpFromMonth").value), jd:Number(document.getElementById("dpFromDay").value)};
+      dpDateTo = {jy:Number(document.getElementById("dpToYear").value), jm:Number(document.getElementById("dpToMonth").value), jd:Number(document.getElementById("dpToDay").value)};
+      renderDpReport(content);
+    };
+  });
+}
+function showDpDailyDetail(employee){
+  const card = document.getElementById("dpDailyDetailCard");
+  card.classList.remove("hidden");
+  document.getElementById("dpDailyDetailTitle").textContent = "جزئیات روزانه — " + employee;
+  const recs = (window.__dpReportFiltered||[]).filter(r=>r.employee===employee).sort((a,b)=>a.dateIso.localeCompare(b.dateIso));
+  document.getElementById("dpDailyDetailHolder").innerHTML = recs.length ? `
+    <table><thead><tr><th>تاریخ</th>${DAILY_INDICATORS.map(ind=>`<th>${ind.label}</th>`).join("")}</tr></thead>
+    <tbody>${recs.map(r=>`<tr><td>${r.dateShamsi}</td>${DAILY_INDICATORS.map(ind=>`<td>${fmtNum(r[ind.key]||0)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+  ` : `<div class="empty-state">داده‌ای موجود نیست.</div>`;
+  card.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+/* ---- Trend ---- */
+function renderDpTrend(content){
+  const allowed = allowedDailyPerfEmployees();
+  if(dpTrendSelectedEmployees.size===0 && allowed.length) dpTrendSelectedEmployees.add(currentUser.role==="manager" ? allowed[0] : currentUser.name);
+  const t = todayShamsi();
+  if(!dpDateFrom) dpDateFrom = {jy:t.jy, jm:1, jd:1};
+  if(!dpDateTo) dpDateTo = {jy:t.jy, jm:t.jm, jd:t.jd};
+
+  content.innerHTML = `
+    <div class="section-card">
+      <h3>فیلتر روند</h3>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);">پشتیبان(ها):</label>
+        <div id="dpTrendEmpPicker" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+      <div class="tab-pill-group" id="dpTrendIndicatorPills"></div>
+    </div>
+    <div class="section-card">
+      <h3>نمودار روند</h3>
+      <div class="chart-wrap" style="height:320px;"><div id="dpTrendChart"></div></div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-top:14px;" id="dpTrendStatsKpis"></div>
+    </div>`;
+
+  const picker = document.getElementById("dpTrendEmpPicker");
+  allowed.forEach(nm=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (dpTrendSelectedEmployees.has(nm) ? " active":"");
+    b.textContent = nm;
+    b.onclick = ()=>{
+      if(dpTrendSelectedEmployees.has(nm)) dpTrendSelectedEmployees.delete(nm); else dpTrendSelectedEmployees.add(nm);
+      renderDpTrend(content);
+    };
+    picker.appendChild(b);
+  });
+
+  const indPillHolder = document.getElementById("dpTrendIndicatorPills");
+  DAILY_INDICATORS.forEach(ind=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (dpTrendIndicator===ind.key ? " active":"");
+    b.textContent = ind.label;
+    b.onclick = ()=>{ dpTrendIndicator = ind.key; renderDpTrend(content); };
+    indPillHolder.appendChild(b);
+  });
+
+  const scoped = dailyPerfScopedRecords();
+  const fromIso = shamsiToIso(dpDateFrom.jy,dpDateFrom.jm,dpDateFrom.jd);
+  const toIso = shamsiToIso(dpDateTo.jy,dpDateTo.jm,dpDateTo.jd);
+  const empList = Array.from(dpTrendSelectedEmployees);
+  const dateSet = new Set();
+  scoped.forEach(r=>{ if(r.dateIso>=fromIso && r.dateIso<=toIso && empList.includes(r.employee)) dateSet.add(r.dateIso); });
+  const dates = Array.from(dateSet).sort();
+  const series = empList.map((nm,i)=>({
+    name: nm,
+    color: CHART_PALETTE[i%CHART_PALETTE.length],
+    values: dates.map(d=>{
+      const rec = scoped.find(r=>r.employee===nm && r.dateIso===d);
+      return rec ? (rec[dpTrendIndicator]||0) : 0;
+    }),
+  }));
+  chartLine("dpTrendChart", dates.map(d=>{ const s=isoToShamsi(d); return formatShamsi(s.jy,s.jm,s.jd); }), series);
+
+  const allVals = series.flatMap(s=>s.values);
+  const avg = allVals.length ? (allVals.reduce((a,b)=>a+b,0)/allVals.length) : 0;
+  const max = allVals.length ? Math.max(...allVals) : 0;
+  const min = allVals.length ? Math.min(...allVals) : 0;
+  document.getElementById("dpTrendStatsKpis").innerHTML = `
+    <div class="kpi-card"><div class="label">میانگین</div><div class="value">${avg.toFixed(1)}</div></div>
+    <div class="kpi-card"><div class="label">بیشترین</div><div class="value">${fmtNum(max)}</div></div>
+    <div class="kpi-card"><div class="label">کمترین</div><div class="value">${fmtNum(min)}</div></div>
+  `;
+}
+
+/* ---- Pending tasks (کارهای در انتظار) ---- */
+function renderPendingTasksView(content){
+  const isManager = currentUser.role==="manager";
+  const allowed = allowedDailyPerfEmployees();
+  const tasks = tasksScopedForUser().slice().sort((a,b)=> (b.referDateIso||"").localeCompare(a.referDateIso||""));
+
+  content.innerHTML = `
+    ${isManager ? `
+    <div class="section-card">
+      <h3>ثبت کار جدید</h3>
+      <div class="form-grid">
+        <div class="full"><label>پشتیبان</label><select id="taskEmpSelect">${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}</select></div>
+        <div><label>فرآیند</label><select id="taskProcessSelect">${DAILY_INDICATORS.map(ind=>`<option value="${ind.key}">${ind.label}</option>`).join("")}</select></div>
+        <div><label>شماره پایانه</label><input type="text" id="taskTerminalInput"></div>
+        <div class="full"><label>نام فروشگاه</label><input type="text" id="taskStoreInput"></div>
+        <div class="full"><label>توضیحات</label><textarea id="taskNotesInput" placeholder="توضیحات کار..."></textarea></div>
+      </div>
+      <button class="btn-sm" style="margin-top:12px;" onclick="createPendingTask()">ثبت کار</button>
+      <div id="taskCreateMsg" class="small-note"></div>
+    </div>` : ""}
+    <div class="section-card">
+      <h3>${isManager ? "لیست کارها" : "کارهای من"}</h3>
+      <div class="tab-pill-group" id="taskStatusPills"></div>
+      <div id="tasksListHolder"></div>
+    </div>`;
+
+  if(isManager){
+    document.getElementById("taskEmpSelect").value = taskFormEmployee || allowed[0];
+  }
+
+  let statusFilter = window.__taskStatusFilter || "مانده";
+  const pillHolder = document.getElementById("taskStatusPills");
+  ["مانده","انجام شده","ناموفق","همه"].forEach(s=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (statusFilter===s ? " active":"");
+    b.textContent = s;
+    b.onclick = ()=>{ window.__taskStatusFilter = s; renderPendingTasksView(content); };
+    pillHolder.appendChild(b);
+  });
+
+  const shown = statusFilter==="همه" ? tasks : tasks.filter(x=>x.status===statusFilter);
+  document.getElementById("tasksListHolder").innerHTML = shown.length ? shown.map(task=>{
+    const indLabel = (DAILY_INDICATORS.find(i=>i.key===task.process)||{}).label || task.process;
+    const statusCls = task.status==="انجام شده" ? "good" : task.status==="ناموفق" ? "warn" : "";
+    return `<div class="msg-item">
+      <div class="msg-head"><span><b>${task.store||"—"}</b> — ${task.employee}</span><span class="pill ${statusCls}">${task.status}</span></div>
+      <p style="margin-top:6px;">فرآیند: ${indLabel} | پایانه: ${task.terminalId||"—"} | تاریخ ارجاع: ${task.referDateShamsi||"—"}</p>
+      ${task.notes ? `<p style="color:var(--muted);">${task.notes}</p>` : ""}
+      ${task.status==="ناموفق" && task.failReason ? `<p style="color:var(--warn);">علت عدم موفقیت: ${task.failReason}</p>` : ""}
+      ${!isManager && task.status==="مانده" ? `
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm" onclick="submitTaskResult('${task.id}','انجام شده')">✔ انجام شد</button>
+          <button class="btn-sm secondary" onclick="promptTaskFail('${task.id}')">✘ ناموفق</button>
+        </div>` : ""}
+      ${isManager && task.status!=="مانده" ? `<button class="btn-sm secondary" style="margin-top:8px;" onclick="reopenTask('${task.id}')">بازگردانی به مانده</button>` : ""}
+    </div>`;
+  }).join("") : `<div class="empty-state">موردی وجود ندارد.</div>`;
+}
+async function createPendingTask(){
+  const employee = document.getElementById("taskEmpSelect").value;
+  const process = document.getElementById("taskProcessSelect").value;
+  const terminalId = document.getElementById("taskTerminalInput").value.trim();
+  const store = document.getElementById("taskStoreInput").value.trim();
+  const notes = document.getElementById("taskNotesInput").value.trim();
+  const msgEl = document.getElementById("taskCreateMsg");
+  if(!store){ msgEl.innerHTML = `<span style="color:var(--warn);">نام فروشگاه را وارد کنید.</span>`; return; }
+  const t = todayShamsi();
+  const task = {
+    id: "task_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),
+    employee, manager: currentUser.name, process, terminalId, store, notes,
+    status: "مانده",
+    referDateShamsi: formatShamsi(t.jy,t.jm,t.jd), referDateIso: shamsiToIso(t.jy,t.jm,t.jd),
+    doneDateShamsi: null, doneDateIso: null, failReason: "",
+    history: [{changedAt: new Date().toISOString(), changedBy: currentUser.name, fromStatus:null, toStatus:"مانده"}],
+  };
+  const newTasks = [...pendingTasks, task];
+  msgEl.textContent = "در حال ذخیره...";
+  const saved = await supaSetAppData("pending_tasks", newTasks);
+  if(saved){
+    pendingTasks = newTasks;
+    taskFormEmployee = employee;
+    msgEl.innerHTML = `<span style="color:var(--good);">✔ کار ثبت شد.</span>`;
+    document.getElementById("taskStoreInput").value = "";
+    document.getElementById("taskNotesInput").value = "";
+    document.getElementById("taskTerminalInput").value = "";
+  }else{
+    msgEl.innerHTML = `<span style="color:var(--warn);">⚠ ذخیره ناموفق بود.</span>`;
+  }
+}
+async function updateTaskStatus(taskId, newStatus, failReason){
+  const t = todayShamsi();
+  const newTasks = pendingTasks.map(x=>{
+    if(x.id !== taskId) return x;
+    const entry = {changedAt: new Date().toISOString(), changedBy: currentUser.name, fromStatus:x.status, toStatus:newStatus};
+    return {
+      ...x, status:newStatus,
+      doneDateShamsi: newStatus==="مانده" ? null : formatShamsi(t.jy,t.jm,t.jd),
+      doneDateIso: newStatus==="مانده" ? null : shamsiToIso(t.jy,t.jm,t.jd),
+      failReason: newStatus==="ناموفق" ? (failReason||"") : (newStatus==="مانده" ? "" : x.failReason),
+      history: [...(x.history||[]), entry],
+    };
+  });
+  const saved = await supaSetAppData("pending_tasks", newTasks);
+  if(saved){ pendingTasks = newTasks; renderPendingTasksView(document.getElementById("dpContent")); }
+}
+function submitTaskResult(taskId, status){ updateTaskStatus(taskId, status, ""); }
+function promptTaskFail(taskId){
+  const reason = prompt("علت عدم موفقیت را وارد کنید:");
+  if(reason===null) return;
+  updateTaskStatus(taskId, "ناموفق", reason);
+}
+function reopenTask(taskId){ updateTaskStatus(taskId, "مانده", ""); }
 
 /* ================= MESSAGES ================= */
 function messagableEmployees(){
