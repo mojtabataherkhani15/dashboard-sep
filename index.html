@@ -53,10 +53,6 @@ input,select{font-family:inherit;}
   padding:40px 36px;width:100%;max-width:400px;
 }
 .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
-.login-brand .logo-mark{
-  width:auto;height:44px;flex:none;
-}
-.login-brand .logo-mark img{height:100%;width:auto;display:block;object-fit:contain;}
 .login-card h1{font-size:20px;color:var(--navy);}
 .login-card p.sub{color:var(--muted);font-size:13px;margin:6px 0 26px;}
 .field{margin-bottom:16px;}
@@ -81,8 +77,6 @@ input,select{font-family:inherit;}
   position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,0.12);
 }
 .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;}
-.topbar .brand .logo-mark{width:auto;height:26px;display:flex;align-items:center;}
-.topbar .brand .logo-mark img{height:100%;width:auto;display:block;background:#fff;border-radius:6px;padding:2px 6px;}
 .topbar .userbox{display:flex;align-items:center;gap:14px;font-size:13px;}
 .topbar .userbox .role-badge{background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;font-size:11.5px;}
 .topbar .logout{background:rgba(255,255,255,0.12);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px;}
@@ -314,7 +308,6 @@ tbody tr:hover{background:var(--navy-pale-2);}
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-brand">
-      <div class="logo-mark"><img src="data:image/png;base64,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" alt="لوگو سپ"></div>
       <h1>سامانه عملکرد کارکنان</h1>
     </div>
     <p class="sub">برای ورود، نام کاربری و رمز عبور خود را وارد کنید</p>
@@ -335,7 +328,7 @@ tbody tr:hover{background:var(--navy-pale-2);}
 <!-- ============ APP SHELL ============ -->
 <div id="appShell">
   <div class="topbar">
-    <div class="brand"><span class="logo-mark"><img src="data:image/png;base64,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" alt="لوگو سپ"></span> سامانه مدیریت عملکرد کارکنان</div>
+    <div class="brand">سامانه مدیریت عملکرد کارکنان</div>
     <div class="userbox">
       <span id="userboxName"></span>
       <span class="role-badge" id="userboxRole"></span>
@@ -716,6 +709,26 @@ tbody tr:hover{background:var(--navy-pale-2);}
         </div>
         <div id="pmMappingMsg" class="small-note"></div>
       </div>
+
+      <div class="section-card">
+        <h3>بارگذاری فایل سوئیچ روزانه (حضور و عملکرد روزانه)</h3>
+        <div class="upload-box">
+          <div style="font-size:32px;">🕑</div>
+          <p style="margin:10px 0 4px;font-weight:700;color:var(--navy);">فایل لاگ تراکنش سوئیچ همان روز را انتخاب کنید</p>
+          <p class="small-note">هر فایل فقط داده یک روز را دارد؛ با هر آپلود، فقط داده همان تاریخ جایگزین می‌شود و روزهای دیگر دست‌نخورده می‌مانند. مبنای زیرتب‌های «حضور روزانه» و «ورود و خروج» است. ستون‌های تاریخ و ساعت باید جدا از هم باشند (تاریخ به‌صورت شمسی خام، مثل 1405/07/23).</p>
+          <input type="file" id="switchExcelInput" accept=".xlsx,.csv" onchange="handleSwitchFileSelect(event)">
+        </div>
+      </div>
+      <div class="section-card hidden" id="switchMappingCard">
+        <h3>تطبیق ستون‌های فایل سوئیچ</h3>
+        <p class="small-note">ستون «تاریخ تراکنش» باید تاریخ شمسی خام (مثل 1405/07/23) و ستون «ساعت» زمان همان رکورد را داشته باشد؛ تاریخ بدون هیچ تبدیلی همان‌طور که در فایل است ثبت می‌شود. ستون «فرآیند» مستقیماً به‌عنوان نوع فعالیت (نصب، PM، کهربا، جمع‌آوری، تعویض، EM و...) خوانده می‌شود.</p>
+        <div id="switchMappingRows"></div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn-sm" onclick="confirmSwitchMapping()">پردازش و ثبت داده‌های سوئیچ</button>
+          <button class="btn-sm secondary" onclick="cancelSwitchUpload()">انصراف</button>
+        </div>
+        <div id="switchMappingMsg" class="small-note"></div>
+      </div>
     </div>
 
   </div>
@@ -831,6 +844,9 @@ let records = [];       // normalized records from excel
 let pmRecords = [];     // separate PM dataset, uploaded independently by the site admin
 let dailyPerfRecords = []; // daily performance log entries, one per (employee, date)
 let pendingTasks = [];     // "کارهای در انتظار" workflow items
+let switchRecords = [];           // raw switch-transaction log rows, accumulated day by day
+let attendanceCaseDecisions = []; // manager decisions on ">30min gap" cases (حضور روزانه)
+let checkInOutDecisions = [];     // manager decisions per (employee, date, shift) for ورود و خروج
 let weights = JSON.parse(JSON.stringify(DEFAULT_WEIGHTS));
 let messages = [];
 let wideMonthlyPairs = []; // detected monthly amount/transaction column pairs
@@ -939,6 +955,9 @@ async function loadAll(){
   pmRecords = await supaGetAppData("pm_records", []);
   dailyPerfRecords = await supaGetAppData("daily_perf_records", []);
   pendingTasks = await supaGetAppData("pending_tasks", []);
+  switchRecords = await supaGetAppData("switch_records", []);
+  attendanceCaseDecisions = await supaGetAppData("attendance_case_decisions", []);
+  checkInOutDecisions = await supaGetAppData("checkinout_decisions", []);
   weights = await supaGetAppData("weights", DEFAULT_WEIGHTS);
   messages = await supaGetMessages();
 }
@@ -971,11 +990,14 @@ function stopAutoRefresh(){
 async function checkForUpdates(){
   if(!currentUser) return;
   try{
-    const [newRecords, newPmRecords, newDailyPerf, newTasks, newWeights, newMessages] = await Promise.all([
+    const [newRecords, newPmRecords, newDailyPerf, newTasks, newSwitch, newAttCases, newCio, newWeights, newMessages] = await Promise.all([
       supaGetAppData("performance_records", records),
       supaGetAppData("pm_records", pmRecords),
       supaGetAppData("daily_perf_records", dailyPerfRecords),
       supaGetAppData("pending_tasks", pendingTasks),
+      supaGetAppData("switch_records", switchRecords),
+      supaGetAppData("attendance_case_decisions", attendanceCaseDecisions),
+      supaGetAppData("checkinout_decisions", checkInOutDecisions),
       supaGetAppData("weights", weights),
       supaGetMessages(),
     ]);
@@ -984,10 +1006,14 @@ async function checkForUpdates(){
       JSON.stringify(newPmRecords) !== JSON.stringify(pmRecords) ||
       JSON.stringify(newDailyPerf) !== JSON.stringify(dailyPerfRecords) ||
       JSON.stringify(newTasks) !== JSON.stringify(pendingTasks) ||
+      JSON.stringify(newSwitch) !== JSON.stringify(switchRecords) ||
+      JSON.stringify(newAttCases) !== JSON.stringify(attendanceCaseDecisions) ||
+      JSON.stringify(newCio) !== JSON.stringify(checkInOutDecisions) ||
       JSON.stringify(newWeights) !== JSON.stringify(weights) ||
       JSON.stringify(newMessages) !== JSON.stringify(messages);
     if(changed){
       records = newRecords; pmRecords = newPmRecords; dailyPerfRecords = newDailyPerf; pendingTasks = newTasks;
+      switchRecords = newSwitch; attendanceCaseDecisions = newAttCases; checkInOutDecisions = newCio;
       weights = newWeights; messages = newMessages;
       refreshCurrentView();
       flashUpdateNotice();
@@ -3785,8 +3811,8 @@ function tasksScopedForUser(){
 function renderDailyPerfView(){
   const isManager = currentUser.role==="manager";
   const tabs = isManager
-    ? [{id:"add",label:"افزودن عملکرد"},{id:"report",label:"گزارش عملکرد"},{id:"trend",label:"روند عملکرد"},{id:"pending",label:"کارهای در انتظار"}]
-    : [{id:"report",label:"گزارش عملکرد"},{id:"trend",label:"روند عملکرد"},{id:"pending",label:"کارهای در انتظار"}];
+    ? [{id:"add",label:"افزودن عملکرد"},{id:"report",label:"گزارش عملکرد"},{id:"trend",label:"روند عملکرد"},{id:"pending",label:"کارهای در انتظار"},{id:"attendance",label:"حضور روزانه"},{id:"checkinout",label:"ورود و خروج"}]
+    : [{id:"report",label:"گزارش عملکرد"},{id:"trend",label:"روند عملکرد"},{id:"pending",label:"کارهای در انتظار"},{id:"attendance",label:"حضور روزانه"},{id:"checkinout",label:"ورود و خروج"}];
   if(!tabs.find(t=>t.id===dailyPerfSubTab)) dailyPerfSubTab = tabs[0].id;
 
   const pillHolder = document.getElementById("dpSubTabs");
@@ -3804,6 +3830,8 @@ function renderDailyPerfView(){
   else if(dailyPerfSubTab==="report") renderDpReport(content);
   else if(dailyPerfSubTab==="trend") renderDpTrend(content);
   else if(dailyPerfSubTab==="pending") renderPendingTasksView(content);
+  else if(dailyPerfSubTab==="attendance") renderAttendanceView(content);
+  else if(dailyPerfSubTab==="checkinout") renderCheckInOutView(content);
 }
 
 /* ---- Add (مدیر منطقه فقط) ---- */
@@ -4042,6 +4070,18 @@ function renderDpTrend(content){
 }
 
 /* ---- Pending tasks (کارهای در انتظار) ---- */
+function isMarketingProcess(process){ return process === "marketing"; }
+function taskFieldsHtml(process){
+  if(isMarketingProcess(process)){
+    return `
+      <div class="full"><label>نام و نام خانوادگی</label><input type="text" id="taskFullNameInput"></div>
+      <div><label>شماره تماس</label><input type="text" id="taskPhoneInput"></div>
+      <div><label>بانک مورد نظر</label><input type="text" id="taskBankInput"></div>`;
+  }
+  return `
+    <div><label>شماره پایانه</label><input type="text" id="taskTerminalInput"></div>
+    <div class="full"><label>نام فروشگاه</label><input type="text" id="taskStoreInput"></div>`;
+}
 function renderPendingTasksView(content){
   const isManager = currentUser.role==="manager";
   const allowed = allowedDailyPerfEmployees();
@@ -4054,8 +4094,9 @@ function renderPendingTasksView(content){
       <div class="form-grid">
         <div class="full"><label>پشتیبان</label><select id="taskEmpSelect">${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}</select></div>
         <div><label>فرآیند</label><select id="taskProcessSelect">${DAILY_INDICATORS.map(ind=>`<option value="${ind.key}">${ind.label}</option>`).join("")}</select></div>
-        <div><label>شماره پایانه</label><input type="text" id="taskTerminalInput"></div>
-        <div class="full"><label>نام فروشگاه</label><input type="text" id="taskStoreInput"></div>
+      </div>
+      <div class="form-grid" id="taskDynamicFields" style="margin-top:4px;">${taskFieldsHtml(DAILY_INDICATORS[0].key)}</div>
+      <div class="form-grid" style="margin-top:4px;">
         <div class="full"><label>توضیحات</label><textarea id="taskNotesInput" placeholder="توضیحات کار..."></textarea></div>
       </div>
       <button class="btn-sm" style="margin-top:12px;" onclick="createPendingTask()">ثبت کار</button>
@@ -4063,12 +4104,23 @@ function renderPendingTasksView(content){
     </div>` : ""}
     <div class="section-card">
       <h3>${isManager ? "لیست کارها" : "کارهای من"}</h3>
+      ${isManager ? `<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:var(--muted);">فیلتر پشتیبان:</label>
+        <select id="taskEmpFilter" style="margin-top:6px;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:260px;width:100%;">
+          <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
+        </select></div>` : ""}
       <div class="tab-pill-group" id="taskStatusPills"></div>
       <div id="tasksListHolder"></div>
     </div>`;
 
   if(isManager){
-    document.getElementById("taskEmpSelect").value = taskFormEmployee || allowed[0];
+    const empSel = document.getElementById("taskEmpSelect");
+    empSel.value = taskFormEmployee || allowed[0];
+    document.getElementById("taskProcessSelect").onchange = (e)=>{
+      document.getElementById("taskDynamicFields").innerHTML = taskFieldsHtml(e.target.value);
+    };
+    const empFilterSel = document.getElementById("taskEmpFilter");
+    empFilterSel.value = window.__taskEmployeeFilter || "";
+    empFilterSel.onchange = (e)=>{ window.__taskEmployeeFilter = e.target.value; renderPendingTasksView(content); };
   }
 
   let statusFilter = window.__taskStatusFilter || "مانده";
@@ -4081,18 +4133,26 @@ function renderPendingTasksView(content){
     pillHolder.appendChild(b);
   });
 
-  const shown = statusFilter==="همه" ? tasks : tasks.filter(x=>x.status===statusFilter);
+  let shown = statusFilter==="همه" ? tasks : tasks.filter(x=>x.status===statusFilter);
+  if(isManager && window.__taskEmployeeFilter) shown = shown.filter(x=>x.employee===window.__taskEmployeeFilter);
+
   document.getElementById("tasksListHolder").innerHTML = shown.length ? shown.map(task=>{
     const indLabel = (DAILY_INDICATORS.find(i=>i.key===task.process)||{}).label || task.process;
     const statusCls = task.status==="انجام شده" ? "good" : task.status==="ناموفق" ? "warn" : "";
+    const isMkt = isMarketingProcess(task.process);
+    const titleLine = isMkt ? (task.fullName||"—") : (task.store||"—");
+    const detailLine = isMkt
+      ? `نام: ${task.fullName||"—"} | تماس: ${task.phone||"—"} | بانک: ${task.bank||"—"}`
+      : `پایانه: ${task.terminalId||"—"} | فروشگاه: ${task.store||"—"}`;
     return `<div class="msg-item">
-      <div class="msg-head"><span><b>${task.store||"—"}</b> — ${task.employee}</span><span class="pill ${statusCls}">${task.status}</span></div>
-      <p style="margin-top:6px;">فرآیند: ${indLabel} | پایانه: ${task.terminalId||"—"} | تاریخ ارجاع: ${task.referDateShamsi||"—"}</p>
+      <div class="msg-head"><span><b>${titleLine}</b> — ${task.employee}</span><span class="pill ${statusCls}">${task.status}</span></div>
+      <p style="margin-top:6px;">فرآیند: ${indLabel} | ${detailLine} | تاریخ ارجاع: ${task.referDateShamsi||"—"}</p>
       ${task.notes ? `<p style="color:var(--muted);">${task.notes}</p>` : ""}
+      ${task.status==="انجام شده" && isMkt && task.rahsepar ? `<p style="color:var(--good);">شناسه درخواست رهسپار: ${task.rahsepar}</p>` : ""}
       ${task.status==="ناموفق" && task.failReason ? `<p style="color:var(--warn);">علت عدم موفقیت: ${task.failReason}</p>` : ""}
       ${!isManager && task.status==="مانده" ? `
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-sm" onclick="submitTaskResult('${task.id}','انجام شده')">✔ انجام شد</button>
+          <button class="btn-sm" onclick="${isMkt ? `promptMarketingDone('${task.id}')` : `submitTaskResult('${task.id}','انجام شده')`}">✔ انجام شد</button>
           <button class="btn-sm secondary" onclick="promptTaskFail('${task.id}')">✘ ناموفق</button>
         </div>` : ""}
       ${isManager && task.status!=="مانده" ? `<button class="btn-sm secondary" style="margin-top:8px;" onclick="reopenTask('${task.id}')">بازگردانی به مانده</button>` : ""}
@@ -4102,18 +4162,31 @@ function renderPendingTasksView(content){
 async function createPendingTask(){
   const employee = document.getElementById("taskEmpSelect").value;
   const process = document.getElementById("taskProcessSelect").value;
-  const terminalId = document.getElementById("taskTerminalInput").value.trim();
-  const store = document.getElementById("taskStoreInput").value.trim();
   const notes = document.getElementById("taskNotesInput").value.trim();
   const msgEl = document.getElementById("taskCreateMsg");
-  if(!store){ msgEl.innerHTML = `<span style="color:var(--warn);">نام فروشگاه را وارد کنید.</span>`; return; }
+  const isMkt = isMarketingProcess(process);
+
+  let extraFields = {};
+  if(isMkt){
+    const fullName = document.getElementById("taskFullNameInput").value.trim();
+    const phone = document.getElementById("taskPhoneInput").value.trim();
+    const bank = document.getElementById("taskBankInput").value.trim();
+    if(!fullName){ msgEl.innerHTML = `<span style="color:var(--warn);">نام و نام خانوادگی را وارد کنید.</span>`; return; }
+    extraFields = {fullName, phone, bank, terminalId:"", store:""};
+  }else{
+    const terminalId = document.getElementById("taskTerminalInput").value.trim();
+    const store = document.getElementById("taskStoreInput").value.trim();
+    if(!store){ msgEl.innerHTML = `<span style="color:var(--warn);">نام فروشگاه را وارد کنید.</span>`; return; }
+    extraFields = {terminalId, store, fullName:"", phone:"", bank:""};
+  }
+
   const t = todayShamsi();
   const task = {
     id: "task_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),
-    employee, manager: currentUser.name, process, terminalId, store, notes,
+    employee, manager: currentUser.name, process, notes, ...extraFields,
     status: "مانده",
     referDateShamsi: formatShamsi(t.jy,t.jm,t.jd), referDateIso: shamsiToIso(t.jy,t.jm,t.jd),
-    doneDateShamsi: null, doneDateIso: null, failReason: "",
+    doneDateShamsi: null, doneDateIso: null, failReason: "", rahsepar: "",
     history: [{changedAt: new Date().toISOString(), changedBy: currentUser.name, fromStatus:null, toStatus:"مانده"}],
   };
   const newTasks = [...pendingTasks, task];
@@ -4123,14 +4196,14 @@ async function createPendingTask(){
     pendingTasks = newTasks;
     taskFormEmployee = employee;
     msgEl.innerHTML = `<span style="color:var(--good);">✔ کار ثبت شد.</span>`;
-    document.getElementById("taskStoreInput").value = "";
     document.getElementById("taskNotesInput").value = "";
-    document.getElementById("taskTerminalInput").value = "";
+    document.getElementById("taskDynamicFields").innerHTML = taskFieldsHtml(process);
   }else{
     msgEl.innerHTML = `<span style="color:var(--warn);">⚠ ذخیره ناموفق بود.</span>`;
   }
 }
-async function updateTaskStatus(taskId, newStatus, failReason){
+async function updateTaskStatus(taskId, newStatus, extra){
+  extra = extra || {};
   const t = todayShamsi();
   const newTasks = pendingTasks.map(x=>{
     if(x.id !== taskId) return x;
@@ -4139,20 +4212,456 @@ async function updateTaskStatus(taskId, newStatus, failReason){
       ...x, status:newStatus,
       doneDateShamsi: newStatus==="مانده" ? null : formatShamsi(t.jy,t.jm,t.jd),
       doneDateIso: newStatus==="مانده" ? null : shamsiToIso(t.jy,t.jm,t.jd),
-      failReason: newStatus==="ناموفق" ? (failReason||"") : (newStatus==="مانده" ? "" : x.failReason),
+      failReason: newStatus==="ناموفق" ? (extra.failReason||"") : (newStatus==="مانده" ? "" : x.failReason),
+      rahsepar: newStatus==="انجام شده" ? (extra.rahsepar||"") : (newStatus==="مانده" ? "" : x.rahsepar),
       history: [...(x.history||[]), entry],
     };
   });
   const saved = await supaSetAppData("pending_tasks", newTasks);
   if(saved){ pendingTasks = newTasks; renderPendingTasksView(document.getElementById("dpContent")); }
 }
-function submitTaskResult(taskId, status){ updateTaskStatus(taskId, status, ""); }
+function submitTaskResult(taskId, status){ updateTaskStatus(taskId, status, {}); }
 function promptTaskFail(taskId){
   const reason = prompt("علت عدم موفقیت را وارد کنید:");
   if(reason===null) return;
-  updateTaskStatus(taskId, "ناموفق", reason);
+  updateTaskStatus(taskId, "ناموفق", {failReason:reason});
 }
-function reopenTask(taskId){ updateTaskStatus(taskId, "مانده", ""); }
+function promptMarketingDone(taskId){
+  const rid = prompt("شناسه درخواست رهسپار را وارد کنید:");
+  if(rid===null) return;
+  if(!rid.trim()){ alert("شناسه درخواست رهسپار نمی‌تواند خالی باشد."); return; }
+  updateTaskStatus(taskId, "انجام شده", {rahsepar: rid.trim()});
+}
+function reopenTask(taskId){ updateTaskStatus(taskId, "مانده", {}); }
+
+/* ================= SWITCH LOG / ATTENDANCE / CHECK-IN-OUT =================
+   Dates here are stored and shown as LITERAL Jalali (exactly what the uploaded file says — no
+   Gregorian conversion at all). Gregorian is used internally, for one purpose only: figuring out
+   which weekday a Jalali date falls on, so we know which shift schedule applies. */
+function shamsiKey(jy,jm,jd){ return `${jy}-${String(jm).padStart(2,"0")}-${String(jd).padStart(2,"0")}`; }
+function parseShamsiKey(key){ const [jy,jm,jd] = key.split("-").map(Number); return {jy,jm,jd}; }
+function getWorkDayTypeShamsi(jy,jm,jd){
+  const g = toGregorian(jy,jm,jd);
+  const dow = new Date(Date.UTC(g.gy, g.gm-1, g.gd)).getUTCDay(); // 0=Sun..6=Sat
+  if(dow === 4) return "thursday";
+  if(dow === 5) return "friday_off";
+  return "normal"; // Sat,Sun,Mon,Tue,Wed
+}
+const SHIFT_DEFS = {
+  normal: {morning:{startMin:8*60+30, endMin:13*60+30}, evening:{startMin:16*60+30, endMin:19*60+15}},
+  thursday: {thursday:{startMin:8*60+30, endMin:13*60+30}},
+};
+const SHIFT_FLOAT_MIN = 30;
+// Strict window classification: a log only belongs to a shift if it falls within that shift's
+// official window plus the 30-minute floating allowance on each side. Anything else (the midday
+// gap between shifts, very early/late logs, or anything on a Friday) is reported separately and
+// never enters the attendance/check-in-out math.
+function classifyLogTime(dayType, timeMinutes){
+  if(dayType === "friday_off") return null;
+  if(dayType === "thursday"){
+    const def = SHIFT_DEFS.thursday.thursday;
+    return (timeMinutes >= def.startMin-SHIFT_FLOAT_MIN && timeMinutes <= def.endMin+SHIFT_FLOAT_MIN) ? "thursday" : null;
+  }
+  const m = SHIFT_DEFS.normal.morning, e = SHIFT_DEFS.normal.evening;
+  if(timeMinutes >= m.startMin-SHIFT_FLOAT_MIN && timeMinutes <= m.endMin+SHIFT_FLOAT_MIN) return "morning";
+  if(timeMinutes >= e.startMin-SHIFT_FLOAT_MIN && timeMinutes <= e.endMin+SHIFT_FLOAT_MIN) return "evening";
+  return null;
+}
+function parseShamsiDateString(raw){
+  const s = String(raw||"").trim();
+  const m = s.match(/^(\d{3,4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(!m) return null;
+  return {jy:Number(m[1]), jm:Number(m[2]), jd:Number(m[3])};
+}
+function parseTimeValue(raw){
+  if(typeof raw === "number") return Math.round(raw*24*60); // Excel time cell = fraction of a day
+  const s = String(raw||"").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if(m) return Number(m[1])*60+Number(m[2]);
+  return null;
+}
+function fmtHM(mins){ const h=Math.floor(mins/60), m=mins%60; return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
+
+function allowedAttendanceEmployees(){ return allowedDailyPerfEmployees(); }
+function dayRecordsFor(employee, dateShamsi){ return switchRecords.filter(r=>r.employee===employee && r.dateShamsi===dateShamsi); }
+function attendanceValidRecordsFor(employee, dateShamsi){
+  // One row per terminal per day — if the same terminal was logged more than once, only the
+  // earliest counts as the actual visit.
+  const byTerminal = {};
+  dayRecordsFor(employee, dateShamsi).forEach(r=>{
+    if(classifyLogTime(getWorkDayTypeShamsi(r.jy,r.jm,r.jd), r.timeMinutes) === null) return; // out-of-window, excluded
+    if(!byTerminal[r.terminalId] || r.timeMinutes < byTerminal[r.terminalId].timeMinutes) byTerminal[r.terminalId] = r;
+  });
+  return Object.values(byTerminal).sort((a,b)=>a.timeMinutes-b.timeMinutes);
+}
+function outOfWindowRecordsFor(employee, dateShamsi){
+  return dayRecordsFor(employee, dateShamsi)
+    .filter(r=> classifyLogTime(getWorkDayTypeShamsi(r.jy,r.jm,r.jd), r.timeMinutes) === null)
+    .sort((a,b)=>a.timeMinutes-b.timeMinutes);
+}
+function computeAttendanceCases(employee, dateShamsi){
+  const {jy,jm,jd} = parseShamsiKey(dateShamsi);
+  if(getWorkDayTypeShamsi(jy,jm,jd) === "friday_off") return [];
+  const recs = attendanceValidRecordsFor(employee, dateShamsi);
+  const byShift = {};
+  recs.forEach(r=>{
+    const shift = classifyLogTime(getWorkDayTypeShamsi(r.jy,r.jm,r.jd), r.timeMinutes);
+    if(!shift) return;
+    (byShift[shift] = byShift[shift]||[]).push(r);
+  });
+  const cases = [];
+  Object.keys(byShift).forEach(shift=>{
+    const list = byShift[shift].sort((a,b)=>a.timeMinutes-b.timeMinutes);
+    for(let i=0;i<list.length-1;i++){
+      const gap = list[i+1].timeMinutes - list[i].timeMinutes;
+      if(gap > 30){
+        cases.push({
+          id: `case_${employee}_${dateShamsi}_${shift}_${list[i].timeMinutes}_${list[i+1].timeMinutes}`,
+          employee, dateShamsi, jy, jm, jd, shift,
+          prevTime:list[i].timeMinutes, prevTerminal:list[i].terminalId, prevStore:list[i].store, prevProcess:list[i].process,
+          nextTime:list[i+1].timeMinutes, nextTerminal:list[i+1].terminalId, nextStore:list[i+1].store, nextProcess:list[i+1].process,
+          gapMinutes:gap, overMinutes:gap-30,
+        });
+      }
+    }
+  });
+  return cases;
+}
+function computeCheckInOut(employee, dateShamsi){
+  const {jy,jm,jd} = parseShamsiKey(dateShamsi);
+  const dayType = getWorkDayTypeShamsi(jy,jm,jd);
+  if(dayType === "friday_off") return [];
+  const recs = attendanceValidRecordsFor(employee, dateShamsi);
+  const shiftsToCheck = dayType==="thursday" ? ["thursday"] : ["morning","evening"];
+  const defs = dayType==="thursday" ? SHIFT_DEFS.thursday : SHIFT_DEFS.normal;
+  return shiftsToCheck.map(shift=>{
+    const shiftRecs = recs.filter(r=>classifyLogTime(dayType,r.timeMinutes)===shift).sort((a,b)=>a.timeMinutes-b.timeMinutes);
+    const def = defs[shift];
+    if(shiftRecs.length===0){
+      return {employee, dateShamsi, jy, jm, jd, shift, noMission:true, scheduledStart:def.startMin, scheduledEnd:def.endMin, scheduledDuration:def.endMin-def.startMin};
+    }
+    const firstTime = shiftRecs[0].timeMinutes, lastTime = shiftRecs[shiftRecs.length-1].timeMinutes;
+    const inferredDuration = lastTime - firstTime;
+    const scheduledDuration = def.endMin - def.startMin;
+    const startDelay = Math.max(0, firstTime - def.startMin);
+    const floatViolation = startDelay > SHIFT_FLOAT_MIN;
+    const expectedEndWithFloat = def.endMin + Math.min(startDelay, SHIFT_FLOAT_MIN);
+    const delayCompensatedByLateFinish = startDelay>0 && lastTime >= expectedEndWithFloat;
+    const shortfall = Math.max(0, scheduledDuration - inferredDuration);
+    const overstay = Math.max(0, inferredDuration - scheduledDuration);
+    return {employee, dateShamsi, jy, jm, jd, shift, noMission:false, scheduledStart:def.startMin, scheduledEnd:def.endMin, scheduledDuration,
+      firstTime, lastTime, inferredDuration, startDelay, floatViolation, delayCompensatedByLateFinish, shortfall, overstay};
+  });
+}
+function allEmployeeDatesWithData(allowed){
+  const set = new Set();
+  switchRecords.forEach(r=>{ if(allowed.includes(r.employee)) set.add(r.employee+"|"+r.dateShamsi); });
+  return Array.from(set).map(k=>{ const [employee,dateShamsi]=k.split("|"); return {employee,dateShamsi}; });
+}
+
+/* ---- حضور روزانه (gap > 30min cases) ---- */
+let attEmployeeFilter = "", attStatusFilter = "باز", attAnswerDraft = {};
+function getAttendanceDecision(caseId){ return attendanceCaseDecisions.find(d=>d.id===caseId); }
+function renderAttendanceView(content){
+  const isManager = currentUser.role==="manager";
+  const allowed = allowedAttendanceEmployees();
+  const pairs = allEmployeeDatesWithData(allowed);
+  let allCases = [];
+  pairs.forEach(p=> allCases = allCases.concat(computeAttendanceCases(p.employee, p.dateShamsi)));
+  allCases.forEach(c=>{
+    const dec = getAttendanceDecision(c.id);
+    c.status = dec ? dec.status : "باز";
+    c.managerQuestion = dec ? dec.managerQuestion : "";
+    c.employeeAnswer = dec ? dec.employeeAnswer : "";
+    c.finalNote = dec ? dec.finalNote : "";
+  });
+  if(!isManager) allCases = allCases.filter(c=>c.employee===currentUser.name);
+  allCases.sort((a,b)=> b.dateShamsi.localeCompare(a.dateShamsi) || b.prevTime - a.prevTime);
+
+  content.innerHTML = `
+    <div class="section-card">
+      <h3>${isManager?"پرونده‌های حضور روزانه (فاصله بیش از ۳۰ دقیقه)":"موارد مربوط به من"}</h3>
+      ${isManager ? `<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:var(--muted);">فیلتر پشتیبان:</label>
+        <select id="attEmpFilter" style="margin-top:6px;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:260px;width:100%;">
+          <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
+        </select></div>` : ""}
+      <div class="tab-pill-group" id="attStatusPills"></div>
+      <div id="attCasesHolder"></div>
+    </div>`;
+
+  if(isManager){
+    const sel = document.getElementById("attEmpFilter");
+    sel.value = attEmployeeFilter;
+    sel.onchange = (e)=>{ attEmployeeFilter = e.target.value; renderAttendanceView(content); };
+  }
+  const pillHolder = document.getElementById("attStatusPills");
+  ["باز","در انتظار پاسخ پشتیبان","در انتظار بررسی مدیر","تأیید شده","اخطار ثبت شد","همه"].forEach(s=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (attStatusFilter===s?" active":"");
+    b.textContent = s;
+    b.onclick = ()=>{ attStatusFilter = s; renderAttendanceView(content); };
+    pillHolder.appendChild(b);
+  });
+
+  let shown = allCases;
+  if(isManager && attEmployeeFilter) shown = shown.filter(c=>c.employee===attEmployeeFilter);
+  if(attStatusFilter!=="همه") shown = shown.filter(c=>c.status===attStatusFilter);
+
+  document.getElementById("attCasesHolder").innerHTML = shown.length ? shown.map(c=>{
+    const shiftLabel = c.shift==="morning"?"شیفت صبح":c.shift==="evening"?"شیفت عصر":"شیفت پنجشنبه";
+    const statusCls = c.status==="تأیید شده"?"good":c.status==="اخطار ثبت شد"?"warn":"";
+    const caseIcon = c.status==="اخطار ثبت شد" ? "🟡" : c.status==="تأیید شده" ? "✅" : "🔴";
+    return `<div class="msg-item">
+      <div class="msg-head"><span>${caseIcon} <b>${c.employee}</b> — ${formatShamsi(c.jy,c.jm,c.jd)} (${shiftLabel})</span><span class="pill ${statusCls}">${c.status}</span></div>
+      <p style="margin-top:6px;">فروشگاه اول: ${c.prevStore||"—"} (پایانه ${c.prevTerminal||"—"}${c.prevProcess?" — "+c.prevProcess:""}) ساعت ورود ${fmtHM(c.prevTime)}</p>
+      <p>فروشگاه بعدی: ${c.nextStore||"—"} (پایانه ${c.nextTerminal||"—"}${c.nextProcess?" — "+c.nextProcess:""}) ساعت ورود ${fmtHM(c.nextTime)}</p>
+      <p style="color:var(--warn);font-weight:700;">فاصله: ${c.gapMinutes} دقیقه (${c.overMinutes} دقیقه بیش از حد مجاز ۳۰ دقیقه‌ای)</p>
+      ${c.managerQuestion ? `<p style="color:var(--muted);">سؤال مدیر: ${c.managerQuestion}</p>` : ""}
+      ${c.employeeAnswer ? `<p style="color:var(--navy);">پاسخ پشتیبان: ${c.employeeAnswer}</p>` : ""}
+      ${c.finalNote ? `<p style="color:var(--muted);">یادداشت نهایی: ${c.finalNote}</p>` : ""}
+      ${isManager && (c.status==="باز") ? `
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm" onclick="approveAttendanceCase('${c.id}')">✔ تأیید</button>
+          <button class="btn-sm secondary" onclick="askAttendanceReason('${c.id}')">پرسیدن علت تأخیر</button>
+        </div>` : ""}
+      ${isManager && c.status==="در انتظار بررسی مدیر" ? `
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm" onclick="approveAttendanceCase('${c.id}')">✔ تأیید نهایی</button>
+          <button class="btn-sm secondary" onclick="warnAttendanceCase('${c.id}')">ثبت اخطار</button>
+        </div>` : ""}
+      ${!isManager && c.status==="در انتظار پاسخ پشتیبان" ? `
+        <div style="margin-top:10px;">
+          <textarea id="attAnswerInput_${c.id}" placeholder="علت تأخیر را بنویسید..."></textarea>
+          <button class="btn-sm" style="margin-top:8px;" onclick="submitAttendanceAnswer('${c.id}')">ارسال پاسخ</button>
+        </div>` : ""}
+    </div>`;
+  }).join("") : `<div class="empty-state">موردی وجود ندارد.</div>`;
+}
+async function saveAttendanceDecision(caseId, patch){
+  const existing = getAttendanceDecision(caseId);
+  const base = existing || {id:caseId, status:"باز", managerQuestion:"", employeeAnswer:"", finalNote:""};
+  const updated = {...base, ...patch};
+  const newList = attendanceCaseDecisions.filter(d=>d.id!==caseId);
+  newList.push(updated);
+  const saved = await supaSetAppData("attendance_case_decisions", newList);
+  if(saved){ attendanceCaseDecisions = newList; renderAttendanceView(document.getElementById("dpContent")); }
+}
+function approveAttendanceCase(caseId){ saveAttendanceDecision(caseId, {status:"تأیید شده"}); }
+function askAttendanceReason(caseId){
+  const q = prompt("سؤال برای پشتیبان درباره علت تأخیر:", "علت فاصله زمانی بین دو مأموریت را توضیح دهید.");
+  if(q===null) return;
+  saveAttendanceDecision(caseId, {status:"در انتظار پاسخ پشتیبان", managerQuestion:q});
+}
+function submitAttendanceAnswer(caseId){
+  const val = (document.getElementById("attAnswerInput_"+caseId)||{}).value || "";
+  if(!val.trim()){ alert("پاسخ را وارد کنید."); return; }
+  saveAttendanceDecision(caseId, {status:"در انتظار بررسی مدیر", employeeAnswer:val.trim()});
+}
+function warnAttendanceCase(caseId){
+  const note = prompt("یادداشت اخطار (اختیاری):") || "";
+  saveAttendanceDecision(caseId, {status:"اخطار ثبت شد", finalNote:note});
+}
+
+/* ---- ورود و خروج ---- */
+let cioEmployeeFilter = "";
+function getCioDecision(employee, dateShamsi, shift){ return checkInOutDecisions.find(d=>d.employee===employee && d.dateShamsi===dateShamsi && d.shift===shift); }
+function renderCheckInOutView(content){
+  const isManager = currentUser.role==="manager";
+  const allowed = allowedAttendanceEmployees();
+  const pairs = allEmployeeDatesWithData(allowed);
+  let rows = [];
+  let outOfWindow = [];
+  pairs.forEach(p=>{
+    computeCheckInOut(p.employee, p.dateShamsi).forEach(r=> rows.push(r));
+    outOfWindow = outOfWindow.concat(outOfWindowRecordsFor(p.employee, p.dateShamsi));
+  });
+  rows.forEach(r=>{
+    const dec = getCioDecision(r.employee, r.dateShamsi, r.shift);
+    r.managerDecision = dec ? dec.decision : null;
+    r.managerNote = dec ? dec.note : "";
+  });
+  if(!isManager){
+    rows = rows.filter(r=>r.employee===currentUser.name);
+    outOfWindow = outOfWindow.filter(r=>r.employee===currentUser.name);
+  }
+  rows.sort((a,b)=> b.dateShamsi.localeCompare(a.dateShamsi));
+
+  content.innerHTML = `
+    <div class="section-card">
+      <h3>${isManager?"گزارش ورود و خروج":"ورود و خروج من"}</h3>
+      <p class="small-note">شیفت صبح ۰۸:۳۰ تا ۱۳:۳۰، شیفت عصر ۱۶:۳۰ تا ۱۹:۱۵، پنجشنبه فقط شیفت صبح، جمعه تعطیل. با ۳۰ دقیقه شناوری: اگر شروع دیرتر بود، پایان هم به همان میزان دیرتر مجاز است؛ کسری کار بر اساس مدت واقعی کارکرد محاسبه می‌شود.</p>
+      ${isManager ? `<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:var(--muted);">فیلتر پشتیبان:</label>
+        <select id="cioEmpFilter" style="margin-top:6px;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:260px;width:100%;">
+          <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
+        </select></div>` : ""}
+      <div id="cioTableHolder"></div>
+    </div>
+    <div class="section-card">
+      <h3>لاگ‌های خارج از بازه شیفت</h3>
+      <p class="small-note">این موارد (مثلاً خیلی زود، بین دو شیفت، یا خیلی دیر) در هیچ محاسبه‌ای وارد نمی‌شوند؛ فقط برای اطلاع نمایش داده می‌شوند.</p>
+      <div id="cioOutOfWindowHolder"></div>
+    </div>`;
+
+  if(isManager){
+    const sel = document.getElementById("cioEmpFilter");
+    sel.value = cioEmployeeFilter;
+    sel.onchange = (e)=>{ cioEmployeeFilter = e.target.value; renderCheckInOutView(content); };
+    if(cioEmployeeFilter){ rows = rows.filter(r=>r.employee===cioEmployeeFilter); outOfWindow = outOfWindow.filter(r=>r.employee===cioEmployeeFilter); }
+  }
+
+  document.getElementById("cioTableHolder").innerHTML = rows.length ? `
+    <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>شیفت</th><th>ورود</th><th>خروج</th><th>مدت کارکرد</th><th>وضعیت</th>${isManager?"<th>اقدام</th>":""}</tr></thead>
+    <tbody>${rows.map(r=>{
+      const shiftLabel = r.shift==="morning"?"صبح":r.shift==="evening"?"عصر":"پنجشنبه";
+      if(r.noMission){
+        return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td><td colspan="3" style="color:var(--muted);">بدون مأموریت ثبت‌شده</td>
+          <td><span class="pill warn">${r.managerDecision||"نیازمند بررسی"}</span></td>
+          ${isManager?`<td><button class="btn-sm" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','غیبت')">غیبت</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','مرخصی')">مرخصی</button></td>`:""}
+        </tr>`;
+      }
+      const statusPill = r.managerDecision ? r.managerDecision :
+        (r.floatViolation ? "تأخیر خارج از شناوری" : (r.shortfall>0 ? "کسری ساعت کاری" : "عادی"));
+      const statusCls = r.managerDecision==="تأیید" ? "good" : (r.floatViolation||r.shortfall>0) ? "warn" : "good";
+      const shortfallNote = r.shortfall>0 ? `<div style="color:var(--warn);font-size:11px;">کسری: ${fmtHM(r.shortfall)}</div>` : "";
+      return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td>
+        <td>${fmtHM(r.firstTime)}</td><td>${fmtHM(r.lastTime)}</td><td>${fmtHM(r.inferredDuration)} / ${fmtHM(r.scheduledDuration)}${shortfallNote}</td>
+        <td><span class="pill ${statusCls}">${statusPill}</span>${r.managerNote?`<div style="font-size:11px;color:var(--muted);">${r.managerNote}</div>`:""}</td>
+        ${isManager && !r.managerDecision ?`<td><button class="btn-sm" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','تأیید')">تأیید</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','مرخصی')">مرخصی</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','غیبت')">غیبت</button></td>`:(isManager?"<td>—</td>":"")}
+      </tr>`;
+    }).join("")}</tbody></table>` : `<div class="empty-state">داده‌ای موجود نیست.</div>`;
+
+  document.getElementById("cioOutOfWindowHolder").innerHTML = outOfWindow.length ? `
+    <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>ساعت</th><th>فروشگاه</th><th>پایانه</th><th>فرآیند</th></tr></thead>
+    <tbody>${outOfWindow.map(r=>`<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${fmtHM(r.timeMinutes)}</td><td>${r.store||"—"}</td><td>${r.terminalId||"—"}</td><td>${r.process||"—"}</td></tr>`).join("")}</tbody></table>
+  ` : `<div class="empty-state">موردی خارج از بازه شیفت ثبت نشده است.</div>`;
+}
+async function setCioDecision(employee, dateShamsi, shift, decision){
+  const newList = checkInOutDecisions.filter(d=>!(d.employee===employee && d.dateShamsi===dateShamsi && d.shift===shift));
+  newList.push({employee, dateShamsi, shift, decision, note:"", decidedBy:currentUser.name, decidedAt:new Date().toISOString()});
+  const saved = await supaSetAppData("checkinout_decisions", newList);
+  if(saved){ checkInOutDecisions = newList; renderCheckInOutView(document.getElementById("dpContent")); }
+}
+
+/* ---- Switch log upload (Mojtaba only) ---- */
+const SWITCH_FIELDS = [
+  {key:"employee", label:"نام پشتیبان", required:true},
+  {key:"store", label:"نام پذیرنده (فروشگاه)", required:true},
+  {key:"terminalId", label:"شماره ترمینال", required:true},
+  {key:"dateCol", label:"تاریخ تراکنش (شمسی)", required:true},
+  {key:"timeCol", label:"ساعت", required:true},
+  {key:"process", label:"فرآیند", required:false},
+];
+const SWITCH_FIELD_HINTS = {
+  employee: ["پشتیبان"], store: ["پذیرنده"], terminalId: ["شماره ترمینال","ترمینال"],
+  dateCol: ["تاریخ تراکنش","تاریخ"], timeCol: ["ساعت"], process: ["فرآیند"],
+};
+function switchGuessColumn(fieldKey, headers){
+  const hints = SWITCH_FIELD_HINTS[fieldKey] || [];
+  for(const h of hints){ const found = headers.find(col=>col.includes(h)); if(found) return found; }
+  return "";
+}
+let switchWorkbookData = null, switchSelectedSheet = "";
+async function handleSwitchFileSelect(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  document.getElementById("switchMappingCard").classList.add("hidden");
+  const ext = (file.name.split(".").pop()||"").toLowerCase();
+  try{
+    if(ext !== "xlsx" && ext !== "csv") throw new Error("فرمت فایل پشتیبانی نمی‌شود.");
+    const buffer = await file.arrayBuffer();
+    const wb = ext==="csv" ? parseCsv(new TextDecoder("utf-8").decode(buffer)) : await parseXlsxZip(buffer);
+    if(!wb.sheetNames.length) throw new Error("فایل خالی است.");
+    switchWorkbookData = wb;
+    switchSelectedSheet = pickBestSheetGeneric(wb, SWITCH_FIELD_HINTS);
+    showSwitchMappingUI();
+  }catch(err){ alert("خطا در خواندن فایل: "+err.message); }
+}
+function showSwitchMappingUI(){
+  const card = document.getElementById("switchMappingCard");
+  card.classList.remove("hidden");
+  let sheetHolder = document.getElementById("switchSheetSelectHolder");
+  if(!sheetHolder){
+    sheetHolder = document.createElement("div");
+    sheetHolder.id = "switchSheetSelectHolder";
+    sheetHolder.style.marginBottom = "16px";
+    card.insertBefore(sheetHolder, document.getElementById("switchMappingRows"));
+  }
+  sheetHolder.innerHTML = `<label style="display:block;font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">انتخاب Sheet</label>
+    <select id="switchSheetSelect" style="width:100%;max-width:360px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;">
+      ${switchWorkbookData.sheetNames.map(n=>`<option value="${n}" ${n===switchSelectedSheet?"selected":""}>${n} — ${switchWorkbookData.sheets[n].rows.length} ردیف</option>`).join("")}
+    </select>`;
+  document.getElementById("switchSheetSelect").onchange = (e)=>{ switchSelectedSheet = e.target.value; renderSwitchMappingFields(); };
+  renderSwitchMappingFields();
+}
+function renderSwitchMappingFields(){
+  const sheet = switchWorkbookData.sheets[switchSelectedSheet];
+  const holder = document.getElementById("switchMappingRows");
+  holder.innerHTML = "";
+  SWITCH_FIELDS.forEach(f=>{
+    const row = document.createElement("div");
+    row.className = "map-row";
+    const guess = switchGuessColumn(f.key, sheet.headers);
+    row.innerHTML = `<label>${f.label}${f.required?'<span class="badge-req">*</span>':""}</label>
+      <select data-field="${f.key}"><option value="">— انتخاب نشده —</option>${sheet.headers.map(h=>`<option value="${h}" ${h===guess?"selected":""}>${h}</option>`).join("")}</select>`;
+    holder.appendChild(row);
+  });
+  document.getElementById("switchMappingMsg").textContent = `${sheet.rows.length} ردیف شناسایی شد.`;
+}
+function cancelSwitchUpload(){
+  document.getElementById("switchMappingCard").classList.add("hidden");
+  document.getElementById("switchExcelInput").value = "";
+  switchWorkbookData = null; switchSelectedSheet = "";
+  const h = document.getElementById("switchSheetSelectHolder"); if(h) h.remove();
+}
+async function confirmSwitchMapping(){
+  const sheet = switchWorkbookData.sheets[switchSelectedSheet];
+  const selects = document.querySelectorAll("#switchMappingRows select");
+  const mapping = {}; selects.forEach(s=> mapping[s.dataset.field]=s.value);
+  const missing = SWITCH_FIELDS.filter(f=>f.required && !mapping[f.key]);
+  if(missing.length){ document.getElementById("switchMappingMsg").innerHTML = `<span style="color:var(--warn);">لطفاً فیلدهای الزامی را تطبیق دهید: ${missing.map(m=>m.label).join("، ")}</span>`; return; }
+
+  const employeeNames = EMPLOYEES.map(e=>e.name);
+  function matchEmployee(raw){
+    const s = String(raw||"").trim();
+    return employeeNames.find(n=> s===n || s.includes(n) || n.includes(s)) || s || "نامشخص";
+  }
+  const newRecords = [];
+  let lastRawEmployee = ""; // defensive carry-down, in case some files only populate the employee column on the first row of each block
+  sheet.rows.forEach(row=>{
+    const d = parseShamsiDateString(row[mapping.dateCol]);
+    if(!d) return;
+    const timeMinutes = parseTimeValue(row[mapping.timeCol]);
+    if(timeMinutes===null) return;
+    const terminalId = String(row[mapping.terminalId]||"").trim();
+    if(!terminalId) return;
+    const rawEmployee = String(row[mapping.employee]||"").trim();
+    if(rawEmployee) lastRawEmployee = rawEmployee;
+    const employee = matchEmployee(lastRawEmployee);
+    const dateShamsi = shamsiKey(d.jy, d.jm, d.jd);
+    newRecords.push({
+      employee, terminalId,
+      store: String(row[mapping.store]||"").trim(),
+      process: mapping.process ? String(row[mapping.process]||"").trim() : "",
+      dateShamsi, jy:d.jy, jm:d.jm, jd:d.jd, timeMinutes,
+    });
+  });
+  if(newRecords.length===0){ document.getElementById("switchMappingMsg").innerHTML = `<span style="color:var(--warn);">هیچ ردیف معتبری یافت نشد. از صحت تطبیق ستون‌های تاریخ و ساعت اطمینان حاصل کنید.</span>`; return; }
+
+  const affectedDates = new Set(newRecords.map(r=>r.dateShamsi));
+  const kept = switchRecords.filter(r=> !affectedDates.has(r.dateShamsi));
+  const merged = [...kept, ...newRecords];
+
+  document.getElementById("switchMappingMsg").innerHTML = `در حال ذخیره...`;
+  const saved = await supaSetAppData("switch_records", merged);
+  if(saved){
+    switchRecords = merged;
+    const dateList = Array.from(affectedDates).map(k=>{ const p=parseShamsiKey(k); return formatShamsi(p.jy,p.jm,p.jd); }).join("، ");
+    document.getElementById("switchMappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${newRecords.length} رکورد برای تاریخ(های) ${dateList} ذخیره شد. داده روزهای دیگر دست‌نخورده ماند.</span>`;
+    setTimeout(()=>{ document.getElementById("switchMappingCard").classList.add("hidden"); document.getElementById("switchExcelInput").value=""; }, 1800);
+  }else{
+    document.getElementById("switchMappingMsg").innerHTML = `<span style="color:var(--warn);">⚠ ذخیره ناموفق بود.</span>`;
+  }
+}
 
 /* ================= MESSAGES ================= */
 function messagableEmployees(){
