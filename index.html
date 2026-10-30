@@ -481,6 +481,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
 
     <!-- ---- REGIONS VIEW (manager only) ---- -->
     <div class="view" id="view-regions">
+      <div class="tab-pill-group" id="regionsSubTabs"></div>
+      <div id="regionsGroupMarketing">
       <div id="regionsFiltersHolder"></div>
       <div class="section-card">
         <h3>رتبه‌بندی نواحی</h3>
@@ -496,6 +498,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
         <div class="tab-pill-group" id="regionPieIndicatorPills"></div>
         <div class="chart-wrap"><div id="chartRegionsPie"></div></div>
       </div>
+      </div>
+      <div id="regionsGroupPm" style="display:none;">
       <div class="section-card">
         <h3>عملکرد PM نواحی</h3>
         <p class="small-note">تعداد PM هر ناحیه، درصد انجام (موفق) و تعداد مانده (آماده پشتیبانی) — رتبه‌بندی‌شده بر اساس درصد انجام.</p>
@@ -505,6 +509,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
         <h3>نمودار درصد انجام PM به تفکیک ناحیه</h3>
         <div class="chart-wrap"><div id="chartPmRegions"></div></div>
       </div>
+      </div>
+      <div id="regionsGroupCollection" style="display:none;">
       <div class="section-card">
         <h3>عملکرد جمع‌آوری نواحی</h3>
         <p class="small-note">تعداد جمع‌آوری هر ناحیه، درصد انجام و تعداد مانده — رتبه‌بندی‌شده بر اساس درصد انجام.</p>
@@ -513,6 +519,7 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div class="section-card">
         <h3>نمودار درصد انجام جمع‌آوری به تفکیک ناحیه</h3>
         <div class="chart-wrap"><div id="chartCollectionRegions"></div></div>
+      </div>
       </div>
     </div>
 
@@ -752,6 +759,7 @@ const EMPLOYEES = [
   {name:"رحیمی زاده", code:"4460936"},
   {name:"طاهری نیا", code:"2448334"},
   {name:"آرین منش", code:"3716007"},
+  {name:"خدابنده", code:"000000"},
 ];
 
 const MANAGERS = [
@@ -763,7 +771,7 @@ const MANAGERS = [
 ];
 
 const REGIONS = {
-  "ناحیه ۱": {manager:"نعیمه جعفری", members:["نوید آذر","عباسی","ناصری","حسینی","آرین منش","تیموری"]},
+  "ناحیه ۱": {manager:"نعیمه جعفری", members:["نوید آذر","عباسی","ناصری","حسینی","آرین منش","تیموری","خدابنده"]},
   "ناحیه ۲": {manager:"ماهان صباغیان", members:["مقری","طاهری نیا","شعبانی","عباسپور","کردی"]},
   "ناحیه ۳": {manager:"مجید شریف زاده", members:["کاظمی","قاسمی","قلی زاده","رحیمی زاده"]},
 };
@@ -1086,14 +1094,22 @@ const MARKETING_SUBGROUP_DEFS = [
   {id:"banks", label:"عملکرد بانک‌ها"},
   {id:"sectors", label:"عملکرد صنف‌ها"},
   {id:"returns", label:"بازاریابی مرجوعی"},
+  {id:"prediction", label:"پیش‌بینی پذیرندگان"},
 ];
 const MARKETING_SUBGROUP_IDS = MARKETING_SUBGROUP_DEFS.map(t=>t.id);
+const EMP_MARKETING_SUBGROUP_DEFS = [
+  {id:"mydashboard", label:"عملکرد بازاریابی"},
+  {id:"mytrend", label:"روند عملکرد"},
+  {id:"returns", label:"مرجوعی‌های من"},
+  {id:"prediction", label:"پیش‌بینی پذیرندگان"},
+];
+const EMP_MARKETING_SUBGROUP_IDS = EMP_MARKETING_SUBGROUP_DEFS.map(t=>t.id);
 const SUPPORT_SUBGROUP_DEFS = [
   {id:"pm", label:"PM"},
   {id:"collection", label:"جمع‌آوری"},
 ];
 const SUPPORT_SUBGROUP_IDS = SUPPORT_SUBGROUP_DEFS.map(t=>t.id);
-let subgroupLastTab = {marketing:"dashboard", support:"pm"};
+let subgroupLastTab = {marketing:"dashboard", support:"pm", empMarketing:"mydashboard", empProcess:"mydashboard", mgrAssistant:"assistant", empAssistant:"assistant"};
 
 function buildTabs(){
   const bar = document.getElementById("tabsBar");
@@ -1108,12 +1124,7 @@ function buildTabs(){
       {label:"عملکرد روزانه", singleId:"dailyperf", items:[
         {id:"dailyperf", label:"عملکرد روزانه"},
       ]},
-      {label:"دستیار هوشمند", singleId:"assistant", items:[
-        {id:"assistant", label:"دستیار هوشمند"},
-      ]},
-      {label:"پیش‌بینی پذیرندگان", singleId:"prediction", items:[
-        {id:"prediction", label:"پیش‌بینی و تحلیل رفتار پذیرندگان"},
-      ]},
+      {label:"دستیار هوشمند", subgroupId:"mgrAssistant"},
       {label:"پیام‌ها", singleId:"messages", items:[
         {id:"messages", label:"پیام‌ها"},
       ]},
@@ -1126,17 +1137,10 @@ function buildTabs(){
     ]});
   }else{
     groups = [
-      {flat:true, items:[
-        {id:"mydashboard", label:"داشبورد من"},
-        {id:"mytrend", label:"روند عملکرد"},
-        {id:"returns", label:"مرجوعی‌های من"},
-        {id:"pm", label:"PM"},
-        {id:"collection", label:"جمع‌آوری"},
-        {id:"dailyperf", label:"عملکرد روزانه"},
-        {id:"assistant", label:"دستیار هوشمند"},
-        {id:"prediction", label:"پیش‌بینی پذیرندگان"},
-        {id:"messages", label:"پیام‌های مدیر"},
-      ]}
+      {label:"فرآیندها", subgroupId:"empProcess"},
+      {label:"عملکرد روزانه", singleId:"dailyperf", items:[{id:"dailyperf", label:"عملکرد روزانه"}]},
+      {label:"دستیار هوشمند", subgroupId:"empAssistant"},
+      {label:"پیام‌های مدیر", singleId:"messages", items:[{id:"messages", label:"پیام‌های مدیر"}]},
     ];
   }
 
@@ -1173,17 +1177,28 @@ document.addEventListener("click", ()=>{
 function renderSubtabsBar(activeId){
   const bar1 = document.getElementById("subtabsBar");
   const bar2 = document.getElementById("subtabsBar2");
-  const inMarketing = currentUser.role==="manager" && MARKETING_SUBGROUP_IDS.includes(activeId);
-  const inSupportTop = inMarketing || activeId==="pm" || activeId==="collection";
+  const isMgr = currentUser.role==="manager";
+  const mktIds = isMgr ? MARKETING_SUBGROUP_IDS : EMP_MARKETING_SUBGROUP_IDS;
+  const mktDefs = isMgr ? MARKETING_SUBGROUP_DEFS : EMP_MARKETING_SUBGROUP_DEFS;
+  const mktLast = isMgr ? subgroupLastTab.marketing : subgroupLastTab.empMarketing;
+  const inMarketing = mktIds.includes(activeId);
+  const inProcess = inMarketing || SUPPORT_SUBGROUP_IDS.includes(activeId);
+  const inAssistant = activeId==="assistant";
 
-  if(inSupportTop){
-    bar1.classList.add("show");
-    bar1.innerHTML = "";
-    const chips = [
-      {label:"بازاریابی", active: inMarketing, action: ()=> switchTab(subgroupLastTab.marketing)},
+  let chips = null;
+  if(inProcess){
+    chips = [
+      {label:"بازاریابی", active: inMarketing, action: ()=> switchTab(mktLast)},
       {label:"PM", active: activeId==="pm", action: ()=> switchTab("pm")},
       {label:"جمع‌آوری", active: activeId==="collection", action: ()=> switchTab("collection")},
     ];
+  }else if(inAssistant){
+    chips = [{label:"بازاریابی", active:true, action: ()=> switchTab("assistant")}];
+  }
+
+  bar1.innerHTML = "";
+  if(chips){
+    bar1.classList.add("show");
     chips.forEach(c=>{
       const chip = document.createElement("button");
       chip.className = "subtab-chip" + (c.active ? " active" : "");
@@ -1193,13 +1208,12 @@ function renderSubtabsBar(activeId){
     });
   }else{
     bar1.classList.remove("show");
-    bar1.innerHTML = "";
   }
 
+  bar2.innerHTML = "";
   if(inMarketing){
     bar2.classList.add("show");
-    bar2.innerHTML = "";
-    MARKETING_SUBGROUP_DEFS.forEach(t=>{
+    mktDefs.forEach(t=>{
       const chip = document.createElement("button");
       chip.className = "subtab-chip" + (t.id===activeId ? " active" : "");
       chip.textContent = t.label;
@@ -1208,7 +1222,6 @@ function renderSubtabsBar(activeId){
     });
   }else{
     bar2.classList.remove("show");
-    bar2.innerHTML = "";
   }
 }
 
@@ -1217,14 +1230,23 @@ function switchTab(id){
   if(["regions","banks","sectors","weights"].includes(id) && currentUser.role!=="manager") id = "mydashboard";
   if(id==="upload" && !(currentUser.role==="manager" && currentUser.canUpload)) id = "mydashboard";
   if(MARKETING_SUBGROUP_IDS.includes(id)) subgroupLastTab.marketing = id;
-  if(SUPPORT_SUBGROUP_IDS.includes(id)) subgroupLastTab.support = id;
+  if(EMP_MARKETING_SUBGROUP_IDS.includes(id)) subgroupLastTab.empMarketing = id;
+  if(SUPPORT_SUBGROUP_IDS.includes(id)){ subgroupLastTab.support = id; subgroupLastTab.empProcess = id; }
+  if(id==="mydashboard"||id==="mytrend") subgroupLastTab.empProcess = id;
+  if(id==="assistant"){ subgroupLastTab.mgrAssistant = "assistant"; subgroupLastTab.empAssistant = "assistant"; }
 
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(v=>v.classList.remove("active"));
   const view = document.getElementById("view-"+id);
   if(view) view.classList.add("active");
   let groupBtnId = null;
-  if(MARKETING_SUBGROUP_IDS.includes(id) || SUPPORT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-support";
+  if(currentUser.role==="manager"){
+    if(MARKETING_SUBGROUP_IDS.includes(id) || SUPPORT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-support";
+    else if(id==="assistant") groupBtnId = "tabbtn-group-mgrAssistant";
+  }else{
+    if(EMP_MARKETING_SUBGROUP_IDS.includes(id) || SUPPORT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-empProcess";
+    else if(id==="assistant") groupBtnId = "tabbtn-group-empAssistant";
+  }
   const btn = document.getElementById("tabbtn-"+id) || (groupBtnId ? document.getElementById(groupBtnId) : null);
   if(btn) btn.classList.add("active");
   renderSubtabsBar(id);
@@ -2151,7 +2173,23 @@ const REGION_PIE_INDICATORS = [
   {key:"count", label:"تعداد بازاریابی"},
   {key:"transactions", label:"تعداد تراکنش"},
 ];
+let regionsSubTab = "marketing";
+function renderRegionsSubTabs(){
+  const h = document.getElementById("regionsSubTabs");
+  h.innerHTML = "";
+  [["marketing","بازاریابی"],["pm","PM"],["collection","جمع‌آوری"]].forEach(([k,l])=>{
+    const b = document.createElement("button");
+    b.className = "tab-pill" + (regionsSubTab===k?" active":"");
+    b.textContent = l;
+    b.onclick = ()=>{ regionsSubTab = k; renderRegionsView(); };
+    h.appendChild(b);
+  });
+  document.getElementById("regionsGroupMarketing").style.display = regionsSubTab==="marketing" ? "" : "none";
+  document.getElementById("regionsGroupPm").style.display = regionsSubTab==="pm" ? "" : "none";
+  document.getElementById("regionsGroupCollection").style.display = regionsSubTab==="collection" ? "" : "none";
+}
 function renderRegionsView(){
+  renderRegionsSubTabs();
   buildFilterBar("regionsFiltersHolder", "regions", {excludeKeys:["employees","banks","sectors","channels"]});
   const filtered = applyFilters(records, "regions");
   const ranking = computeRegionRanking(filtered);
@@ -3203,7 +3241,7 @@ function classifyPmStatus(raw){
 }
 function pmAvailableValues(field){
   const set = new Set();
-  pmRecords.forEach(r=>{
+  pmRecords.filter(isPmOrder).forEach(r=>{
     if(field==="period") set.add(r.period);
     if(field==="employee") set.add(r.employee);
     if(field==="region") set.add(regionOfEmployee(r.employee));
@@ -3224,10 +3262,13 @@ function buildPmFilterBar(containerId){
   const holder = document.getElementById(containerId);
   holder.innerHTML = "";
   const filters = getFilters("pm");
+  const isManager = currentUser.role==="manager";
   const defs = [
     {key:"periods", label:"دوره", values: pmAvailableValues("period"), set:filters.periods},
-    {key:"employees", label:"پشتیبان", values: pmAvailableValues("employee"), set:filters.employees},
-    {key:"regions", label:"ناحیه", values: pmAvailableValues("region"), set:filters.regions},
+    ...(isManager ? [
+      {key:"employees", label:"پشتیبان", values: pmAvailableValues("employee"), set:filters.employees},
+      {key:"regions", label:"ناحیه", values: pmAvailableValues("region"), set:filters.regions},
+    ] : []),
     {key:"pmStatus", label:"وضعیت PM", values:["موفق","آماده پشتیبانی"], set:filters.pmStatus},
   ];
   const section = document.createElement("div");
@@ -3268,7 +3309,7 @@ function pmScopedRecords(){
 }
 function renderPmView(){
   buildPmFilterBar("pmFiltersHolder");
-  const filtered = applyPmFilters(pmScopedRecords());
+  const filtered = applyPmFilters(pmScopedRecords().filter(isPmOrder));
 
   const overallList = pmGroupStats(filtered, ()=>"all", ()=>"کل");
   const overall = overallList[0] || {total:0, success:0, ready:0, successPct:0};
@@ -3445,7 +3486,7 @@ function downloadPendingXlsx(list, filenamePrefix){
 function renderPmRegionSection(){
   const byRegion = {};
   Object.keys(REGIONS).forEach(rn=> byRegion[rn] = {region:rn, total:0, success:0, ready:0});
-  pmRecords.forEach(r=>{
+  pmRecords.filter(isPmOrder).forEach(r=>{
     const rn = regionOfEmployee(r.employee);
     if(!byRegion[rn]) return;
     byRegion[rn].total++;
@@ -3473,6 +3514,16 @@ function isCollectionOrder(r){
   const s = (r.supportOrder||"").replace(/\u200c/g," ").trim();
   return s.includes("جمع آوری");
 }
+function isMarketingSupportOrder(r){
+  const s = (r.supportOrder||"").replace(/\u200c/g," ").trim();
+  return s.includes("بازاریاب");
+}
+// pm_records holds PM, جمع‌آوری and (sometimes) بازاریابی support-orders together in one table;
+// the PM tab must only ever show the actual PM-type rows — جمع‌آوری and بازاریابی already have
+// their own dedicated tabs/pages, so they're excluded here rather than leaking into PM's stats.
+function isPmOrder(r){
+  return !isCollectionOrder(r) && !isMarketingSupportOrder(r);
+}
 function collectionScopedRecords(){
   return pmScopedRecords().filter(isCollectionOrder);
 }
@@ -3499,10 +3550,13 @@ function buildCollectionFilterBar(containerId){
   const holder = document.getElementById(containerId);
   holder.innerHTML = "";
   const filters = getFilters("collection");
+  const isManager = currentUser.role==="manager";
   const defs = [
     {key:"periods", label:"دوره", values: collectionAvailableValues("period"), set:filters.periods},
-    {key:"employees", label:"پشتیبان", values: collectionAvailableValues("employee"), set:filters.employees},
-    {key:"regions", label:"ناحیه", values: collectionAvailableValues("region"), set:filters.regions},
+    ...(isManager ? [
+      {key:"employees", label:"پشتیبان", values: collectionAvailableValues("employee"), set:filters.employees},
+      {key:"regions", label:"ناحیه", values: collectionAvailableValues("region"), set:filters.regions},
+    ] : []),
     {key:"pmStatus", label:"وضعیت", values:["موفق","آماده پشتیبانی"], set:filters.pmStatus},
   ];
   const section = document.createElement("div");
@@ -4000,7 +4054,9 @@ function showDpDailyDetail(employee){
 /* ---- Trend ---- */
 function renderDpTrend(content){
   const allowed = allowedDailyPerfEmployees();
-  if(dpTrendSelectedEmployees.size===0 && allowed.length) dpTrendSelectedEmployees.add(currentUser.role==="manager" ? allowed[0] : currentUser.name);
+  const isMgrTrend = currentUser.role==="manager";
+  if(!isMgrTrend){ dpTrendSelectedEmployees = new Set([currentUser.name]); }
+  else if(dpTrendSelectedEmployees.size===0 && allowed.length) dpTrendSelectedEmployees.add(allowed[0]);
   const t = todayShamsi();
   if(!dpDateFrom) dpDateFrom = {jy:t.jy, jm:1, jd:1};
   if(!dpDateTo) dpDateTo = {jy:t.jy, jm:t.jm, jd:t.jd};
@@ -4008,10 +4064,10 @@ function renderDpTrend(content){
   content.innerHTML = `
     <div class="section-card">
       <h3>فیلتر روند</h3>
-      <div style="margin-bottom:12px;">
+      ${isMgrTrend ? `<div style="margin-bottom:12px;">
         <label style="font-size:12px;font-weight:700;color:var(--muted);">پشتیبان(ها):</label>
         <div id="dpTrendEmpPicker" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      </div>
+      </div>` : ""}
       <div class="tab-pill-group" id="dpTrendIndicatorPills"></div>
     </div>
     <div class="section-card">
@@ -4021,7 +4077,7 @@ function renderDpTrend(content){
     </div>`;
 
   const picker = document.getElementById("dpTrendEmpPicker");
-  allowed.forEach(nm=>{
+  if(picker) allowed.forEach(nm=>{
     const b = document.createElement("button");
     b.className = "tab-pill" + (dpTrendSelectedEmployees.has(nm) ? " active":"");
     b.textContent = nm;
@@ -4249,7 +4305,7 @@ function getWorkDayTypeShamsi(jy,jm,jd){
 }
 const SHIFT_DEFS = {
   normal: {morning:{startMin:8*60+30, endMin:13*60+30}, evening:{startMin:16*60+30, endMin:19*60+15}},
-  thursday: {thursday:{startMin:8*60+30, endMin:13*60+30}},
+  thursday: {morning:{startMin:8*60+30, endMin:13*60+30}}, // Thursday = same morning shift only, no evening shift
 };
 const SHIFT_FLOAT_MIN = 30;
 // Strict window classification: a log only belongs to a shift if it falls within that shift's
@@ -4259,8 +4315,8 @@ const SHIFT_FLOAT_MIN = 30;
 function classifyLogTime(dayType, timeMinutes){
   if(dayType === "friday_off") return null;
   if(dayType === "thursday"){
-    const def = SHIFT_DEFS.thursday.thursday;
-    return (timeMinutes >= def.startMin-SHIFT_FLOAT_MIN && timeMinutes <= def.endMin+SHIFT_FLOAT_MIN) ? "thursday" : null;
+    const def = SHIFT_DEFS.thursday.morning;
+    return (timeMinutes >= def.startMin-SHIFT_FLOAT_MIN && timeMinutes <= def.endMin+SHIFT_FLOAT_MIN) ? "morning" : null;
   }
   const m = SHIFT_DEFS.normal.morning, e = SHIFT_DEFS.normal.evening;
   if(timeMinutes >= m.startMin-SHIFT_FLOAT_MIN && timeMinutes <= m.endMin+SHIFT_FLOAT_MIN) return "morning";
@@ -4299,7 +4355,10 @@ function outOfWindowRecordsFor(employee, dateShamsi){
     .filter(r=> classifyLogTime(getWorkDayTypeShamsi(r.jy,r.jm,r.jd), r.timeMinutes) === null)
     .sort((a,b)=>a.timeMinutes-b.timeMinutes);
 }
-function computeAttendanceCases(employee, dateShamsi){
+function computeAttendanceCases(employee, dateShamsi, includeAll){
+  // includeAll=false (default): only pairs with gap > 30min (the ones needing manager review).
+  // includeAll=true: every consecutive visit pair that day, whatever its gap — each still carries
+  // overMinutes/over30 so the UI can tell which ones would normally be flagged.
   const {jy,jm,jd} = parseShamsiKey(dateShamsi);
   if(getWorkDayTypeShamsi(jy,jm,jd) === "friday_off") return [];
   const recs = attendanceValidRecordsFor(employee, dateShamsi);
@@ -4314,15 +4373,15 @@ function computeAttendanceCases(employee, dateShamsi){
     const list = byShift[shift].sort((a,b)=>a.timeMinutes-b.timeMinutes);
     for(let i=0;i<list.length-1;i++){
       const gap = list[i+1].timeMinutes - list[i].timeMinutes;
-      if(gap > 30){
-        cases.push({
-          id: `case_${employee}_${dateShamsi}_${shift}_${list[i].timeMinutes}_${list[i+1].timeMinutes}`,
-          employee, dateShamsi, jy, jm, jd, shift,
-          prevTime:list[i].timeMinutes, prevTerminal:list[i].terminalId, prevStore:list[i].store, prevProcess:list[i].process,
-          nextTime:list[i+1].timeMinutes, nextTerminal:list[i+1].terminalId, nextStore:list[i+1].store, nextProcess:list[i+1].process,
-          gapMinutes:gap, overMinutes:gap-30,
-        });
-      }
+      const over30 = gap > 30;
+      if(!over30 && !includeAll) continue;
+      cases.push({
+        id: `case_${employee}_${dateShamsi}_${shift}_${list[i].timeMinutes}_${list[i+1].timeMinutes}`,
+        employee, dateShamsi, jy, jm, jd, shift,
+        prevTime:list[i].timeMinutes, prevTerminal:list[i].terminalId, prevStore:list[i].store, prevProcess:list[i].process,
+        nextTime:list[i+1].timeMinutes, nextTerminal:list[i+1].terminalId, nextStore:list[i+1].store, nextProcess:list[i+1].process,
+        gapMinutes:gap, overMinutes:Math.max(0,gap-30), over30,
+      });
     }
   });
   return cases;
@@ -4332,7 +4391,7 @@ function computeCheckInOut(employee, dateShamsi){
   const dayType = getWorkDayTypeShamsi(jy,jm,jd);
   if(dayType === "friday_off") return [];
   const recs = attendanceValidRecordsFor(employee, dateShamsi);
-  const shiftsToCheck = dayType==="thursday" ? ["thursday"] : ["morning","evening"];
+  const shiftsToCheck = dayType==="thursday" ? ["morning"] : ["morning","evening"];
   const defs = dayType==="thursday" ? SHIFT_DEFS.thursday : SHIFT_DEFS.normal;
   return shiftsToCheck.map(shift=>{
     const shiftRecs = recs.filter(r=>classifyLogTime(dayType,r.timeMinutes)===shift).sort((a,b)=>a.timeMinutes-b.timeMinutes);
@@ -4353,21 +4412,31 @@ function computeCheckInOut(employee, dateShamsi){
       firstTime, lastTime, inferredDuration, startDelay, floatViolation, delayCompensatedByLateFinish, shortfall, overstay};
   });
 }
+function isValidShamsiKey(k){ return typeof k==="string" && /^\d{3,4}-\d{2}-\d{2}$/.test(k); }
+function allSwitchDates(){
+  // Only dates that really exist in uploaded data (ignores stale/old-format rows with no date)
+  const set = new Set();
+  switchRecords.forEach(r=>{ if(isValidShamsiKey(r.dateShamsi)) set.add(r.dateShamsi); });
+  return Array.from(set).sort((a,b)=>b.localeCompare(a));
+}
 function allEmployeeDatesWithData(allowed){
   const set = new Set();
-  switchRecords.forEach(r=>{ if(allowed.includes(r.employee)) set.add(r.employee+"|"+r.dateShamsi); });
+  switchRecords.forEach(r=>{ if(isValidShamsiKey(r.dateShamsi) && allowed.includes(r.employee)) set.add(r.employee+"|"+r.dateShamsi); });
   return Array.from(set).map(k=>{ const [employee,dateShamsi]=k.split("|"); return {employee,dateShamsi}; });
 }
 
 /* ---- حضور روزانه (gap > 30min cases) ---- */
 let attEmployeeFilter = "", attStatusFilter = "باز", attAnswerDraft = {};
+let attDateFilter = "", attGapFilter = "over30"; // over30 | all
 function getAttendanceDecision(caseId){ return attendanceCaseDecisions.find(d=>d.id===caseId); }
 function renderAttendanceView(content){
   const isManager = currentUser.role==="manager";
   const allowed = allowedAttendanceEmployees();
   const pairs = allEmployeeDatesWithData(allowed);
+  const allDates = Array.from(new Set(pairs.map(p=>p.dateShamsi))).sort((a,b)=>b.localeCompare(a));
+  const includeAll = attGapFilter==="all";
   let allCases = [];
-  pairs.forEach(p=> allCases = allCases.concat(computeAttendanceCases(p.employee, p.dateShamsi)));
+  pairs.forEach(p=> allCases = allCases.concat(computeAttendanceCases(p.employee, p.dateShamsi, includeAll)));
   allCases.forEach(c=>{
     const dec = getAttendanceDecision(c.id);
     c.status = dec ? dec.status : "باز";
@@ -4380,12 +4449,20 @@ function renderAttendanceView(content){
 
   content.innerHTML = `
     <div class="section-card">
-      <h3>${isManager?"پرونده‌های حضور روزانه (فاصله بیش از ۳۰ دقیقه)":"موارد مربوط به من"}</h3>
-      ${isManager ? `<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:var(--muted);">فیلتر پشتیبان:</label>
-        <select id="attEmpFilter" style="margin-top:6px;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:260px;width:100%;">
-          <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
-        </select></div>` : ""}
-      <div class="tab-pill-group" id="attStatusPills"></div>
+      <h3>${isManager?"پرونده‌های حضور روزانه":"موارد مربوط به من"}</h3>
+      <p class="small-note">داده هر روزی که آپلود شده نگه داشته می‌شود؛ از فیلتر تاریخ برای دیدن فقط یک روز خاص استفاده کنید.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        ${isManager ? `<div><label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">فیلتر پشتیبان:</label>
+          <select id="attEmpFilter" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;min-width:200px;">
+            <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
+          </select></div>` : ""}
+        <div><label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">فیلتر تاریخ:</label>
+          <select id="attDateFilter" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;min-width:160px;">
+            <option value="">همه تاریخ‌ها</option>${allDates.map(d=>{ const p=parseShamsiKey(d); return `<option value="${d}">${formatShamsi(p.jy,p.jm,p.jd)}</option>`; }).join("")}
+          </select></div>
+      </div>
+      <div class="tab-pill-group" id="attGapPills"></div>
+      ${includeAll ? "" : `<div class="tab-pill-group" id="attStatusPills"></div>`}
       <div id="attCasesHolder"></div>
     </div>`;
 
@@ -4394,42 +4471,61 @@ function renderAttendanceView(content){
     sel.value = attEmployeeFilter;
     sel.onchange = (e)=>{ attEmployeeFilter = e.target.value; renderAttendanceView(content); };
   }
-  const pillHolder = document.getElementById("attStatusPills");
-  ["باز","در انتظار پاسخ پشتیبان","در انتظار بررسی مدیر","تأیید شده","اخطار ثبت شد","همه"].forEach(s=>{
+  const dateSel = document.getElementById("attDateFilter");
+  dateSel.value = attDateFilter;
+  dateSel.onchange = (e)=>{ attDateFilter = e.target.value; renderAttendanceView(content); };
+
+  const gapPillHolder = document.getElementById("attGapPills");
+  [["over30","فاصله بالای ۳۰ دقیقه"],["all","همه"]].forEach(([key,label])=>{
     const b = document.createElement("button");
-    b.className = "tab-pill" + (attStatusFilter===s?" active":"");
-    b.textContent = s;
-    b.onclick = ()=>{ attStatusFilter = s; renderAttendanceView(content); };
-    pillHolder.appendChild(b);
+    b.className = "tab-pill" + (attGapFilter===key?" active":"");
+    b.textContent = label;
+    b.onclick = ()=>{ attGapFilter = key; renderAttendanceView(content); };
+    gapPillHolder.appendChild(b);
   });
+
+  if(!includeAll){
+    const pillHolder = document.getElementById("attStatusPills");
+    ["باز","در انتظار پاسخ پشتیبان","در انتظار بررسی مدیر","تأیید شده","اخطار ثبت شد","همه"].forEach(s=>{
+      const b = document.createElement("button");
+      b.className = "tab-pill" + (attStatusFilter===s?" active":"");
+      b.textContent = s;
+      b.onclick = ()=>{ attStatusFilter = s; renderAttendanceView(content); };
+      pillHolder.appendChild(b);
+    });
+  }
 
   let shown = allCases;
   if(isManager && attEmployeeFilter) shown = shown.filter(c=>c.employee===attEmployeeFilter);
-  if(attStatusFilter!=="همه") shown = shown.filter(c=>c.status===attStatusFilter);
+  if(attDateFilter) shown = shown.filter(c=>c.dateShamsi===attDateFilter);
+  if(!includeAll && attStatusFilter!=="همه") shown = shown.filter(c=>c.status===attStatusFilter);
 
   document.getElementById("attCasesHolder").innerHTML = shown.length ? shown.map(c=>{
-    const shiftLabel = c.shift==="morning"?"شیفت صبح":c.shift==="evening"?"شیفت عصر":"شیفت پنجشنبه";
+    const shiftLabel = c.shift==="morning"?"شیفت صبح":"شیفت عصر";
     const statusCls = c.status==="تأیید شده"?"good":c.status==="اخطار ثبت شد"?"warn":"";
-    const caseIcon = c.status==="اخطار ثبت شد" ? "🟡" : c.status==="تأیید شده" ? "✅" : "🔴";
+    const caseIcon = !c.over30 ? "⚪" : c.status==="اخطار ثبت شد" ? "🟡" : c.status==="تأیید شده" ? "✅" : "🔴";
+    const gapLine = c.over30
+      ? `<p style="color:var(--warn);font-weight:700;">فاصله: ${c.gapMinutes} دقیقه (${c.overMinutes} دقیقه بیش از حد مجاز ۳۰ دقیقه‌ای)</p>`
+      : `<p style="color:var(--good);font-weight:700;">فاصله: ${c.gapMinutes} دقیقه (در محدوده مجاز)</p>`;
     return `<div class="msg-item">
-      <div class="msg-head"><span>${caseIcon} <b>${c.employee}</b> — ${formatShamsi(c.jy,c.jm,c.jd)} (${shiftLabel})</span><span class="pill ${statusCls}">${c.status}</span></div>
+      <div class="msg-head"><span>${caseIcon} <b>${c.employee}</b> — ${formatShamsi(c.jy,c.jm,c.jd)} (${shiftLabel})</span>${c.over30?`<span class="pill ${statusCls}">${c.status}</span>`:""}</div>
       <p style="margin-top:6px;">فروشگاه اول: ${c.prevStore||"—"} (پایانه ${c.prevTerminal||"—"}${c.prevProcess?" — "+c.prevProcess:""}) ساعت ورود ${fmtHM(c.prevTime)}</p>
       <p>فروشگاه بعدی: ${c.nextStore||"—"} (پایانه ${c.nextTerminal||"—"}${c.nextProcess?" — "+c.nextProcess:""}) ساعت ورود ${fmtHM(c.nextTime)}</p>
-      <p style="color:var(--warn);font-weight:700;">فاصله: ${c.gapMinutes} دقیقه (${c.overMinutes} دقیقه بیش از حد مجاز ۳۰ دقیقه‌ای)</p>
+      ${gapLine}
       ${c.managerQuestion ? `<p style="color:var(--muted);">سؤال مدیر: ${c.managerQuestion}</p>` : ""}
       ${c.employeeAnswer ? `<p style="color:var(--navy);">پاسخ پشتیبان: ${c.employeeAnswer}</p>` : ""}
       ${c.finalNote ? `<p style="color:var(--muted);">یادداشت نهایی: ${c.finalNote}</p>` : ""}
-      ${isManager && (c.status==="باز") ? `
+      ${c.over30 && isManager && (c.status==="باز") ? `
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn-sm" onclick="approveAttendanceCase('${c.id}')">✔ تأیید</button>
           <button class="btn-sm secondary" onclick="askAttendanceReason('${c.id}')">پرسیدن علت تأخیر</button>
         </div>` : ""}
-      ${isManager && c.status==="در انتظار بررسی مدیر" ? `
+      ${c.over30 && isManager && c.status==="در انتظار بررسی مدیر" ? `
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn-sm" onclick="approveAttendanceCase('${c.id}')">✔ تأیید نهایی</button>
           <button class="btn-sm secondary" onclick="warnAttendanceCase('${c.id}')">ثبت اخطار</button>
         </div>` : ""}
-      ${!isManager && c.status==="در انتظار پاسخ پشتیبان" ? `
+      ${c.over30 && !isManager && c.status==="در انتظار پاسخ پشتیبان" ? `
         <div style="margin-top:10px;">
           <textarea id="attAnswerInput_${c.id}" placeholder="علت تأخیر را بنویسید..."></textarea>
           <button class="btn-sm" style="margin-top:8px;" onclick="submitAttendanceAnswer('${c.id}')">ارسال پاسخ</button>
@@ -4463,17 +4559,23 @@ function warnAttendanceCase(caseId){
 }
 
 /* ---- ورود و خروج ---- */
-let cioEmployeeFilter = "";
+let cioEmployeeFilter = "", cioDateFilter = "";
 function getCioDecision(employee, dateShamsi, shift){ return checkInOutDecisions.find(d=>d.employee===employee && d.dateShamsi===dateShamsi && d.shift===shift); }
 function renderCheckInOutView(content){
   const isManager = currentUser.role==="manager";
   const allowed = allowedAttendanceEmployees();
-  const pairs = allEmployeeDatesWithData(allowed);
+  const allDates = allSwitchDates();
+  // cioDateFilter: "" = auto (latest uploaded date), "all" = every date, otherwise a specific date
+  const activeDate = cioDateFilter==="all" ? "" : (allDates.includes(cioDateFilter) ? cioDateFilter : (allDates[0]||""));
+  const datesInScope = cioDateFilter==="all" ? allDates : (activeDate ? [activeDate] : []);
   let rows = [];
   let outOfWindow = [];
-  pairs.forEach(p=>{
-    computeCheckInOut(p.employee, p.dateShamsi).forEach(r=> rows.push(r));
-    outOfWindow = outOfWindow.concat(outOfWindowRecordsFor(p.employee, p.dateShamsi));
+  // EVERY employee in scope is checked for EVERY date in scope — those with no logs show "بدون عملکرد"
+  datesInScope.forEach(d=>{
+    allowed.forEach(emp=>{
+      computeCheckInOut(emp, d).forEach(r=> rows.push(r));
+      outOfWindow = outOfWindow.concat(outOfWindowRecordsFor(emp, d));
+    });
   });
   rows.forEach(r=>{
     const dec = getCioDecision(r.employee, r.dateShamsi, r.shift);
@@ -4484,16 +4586,22 @@ function renderCheckInOutView(content){
     rows = rows.filter(r=>r.employee===currentUser.name);
     outOfWindow = outOfWindow.filter(r=>r.employee===currentUser.name);
   }
-  rows.sort((a,b)=> b.dateShamsi.localeCompare(a.dateShamsi));
+  rows.sort((a,b)=> b.dateShamsi.localeCompare(a.dateShamsi) || allowed.indexOf(a.employee)-allowed.indexOf(b.employee) || (a.shift==="morning"?0:1)-(b.shift==="morning"?0:1));
 
   content.innerHTML = `
     <div class="section-card">
       <h3>${isManager?"گزارش ورود و خروج":"ورود و خروج من"}</h3>
-      <p class="small-note">شیفت صبح ۰۸:۳۰ تا ۱۳:۳۰، شیفت عصر ۱۶:۳۰ تا ۱۹:۱۵، پنجشنبه فقط شیفت صبح، جمعه تعطیل. با ۳۰ دقیقه شناوری: اگر شروع دیرتر بود، پایان هم به همان میزان دیرتر مجاز است؛ کسری کار بر اساس مدت واقعی کارکرد محاسبه می‌شود.</p>
-      ${isManager ? `<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:var(--muted);">فیلتر پشتیبان:</label>
-        <select id="cioEmpFilter" style="margin-top:6px;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:260px;width:100%;">
-          <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
-        </select></div>` : ""}
+      <p class="small-note">شیفت صبح ۰۸:۳۰ تا ۱۳:۳۰، شیفت عصر ۱۶:۳۰ تا ۱۹:۱۵، پنجشنبه فقط شیفت صبح، جمعه تعطیل. با ۳۰ دقیقه شناوری: اگر شروع دیرتر بود، پایان هم به همان میزان دیرتر مجاز است؛ کسری کار بر اساس مدت واقعی کارکرد محاسبه می‌شود. داده هر روز آپلودشده نگه داشته می‌شود — از فیلتر تاریخ برای دیدن فقط یک روز خاص استفاده کنید.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        ${isManager ? `<div><label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">فیلتر پشتیبان:</label>
+          <select id="cioEmpFilter" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;min-width:200px;">
+            <option value="">همه</option>${allowed.map(nm=>`<option value="${nm}">${nm}</option>`).join("")}
+          </select></div>` : ""}
+        <div><label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">فیلتر تاریخ:</label>
+          <select id="cioDateFilter" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;min-width:160px;">
+            <option value="all">همه تاریخ‌ها</option>${allDates.map(d=>{ const p=parseShamsiKey(d); return `<option value="${d}">${formatShamsi(p.jy,p.jm,p.jd)}</option>`; }).join("")}
+          </select></div>
+      </div>
       <div id="cioTableHolder"></div>
     </div>
     <div class="section-card">
@@ -4508,15 +4616,18 @@ function renderCheckInOutView(content){
     sel.onchange = (e)=>{ cioEmployeeFilter = e.target.value; renderCheckInOutView(content); };
     if(cioEmployeeFilter){ rows = rows.filter(r=>r.employee===cioEmployeeFilter); outOfWindow = outOfWindow.filter(r=>r.employee===cioEmployeeFilter); }
   }
+  const dateSel = document.getElementById("cioDateFilter");
+  dateSel.value = cioDateFilter==="all" ? "all" : activeDate;
+  dateSel.onchange = (e)=>{ cioDateFilter = e.target.value; renderCheckInOutView(content); };
 
   document.getElementById("cioTableHolder").innerHTML = rows.length ? `
     <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>شیفت</th><th>ورود</th><th>خروج</th><th>مدت کارکرد</th><th>وضعیت</th>${isManager?"<th>اقدام</th>":""}</tr></thead>
     <tbody>${rows.map(r=>{
-      const shiftLabel = r.shift==="morning"?"صبح":r.shift==="evening"?"عصر":"پنجشنبه";
+      const shiftLabel = r.shift==="morning"?"صبح":"عصر";
       if(r.noMission){
-        return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td><td colspan="3" style="color:var(--muted);">بدون مأموریت ثبت‌شده</td>
-          <td><span class="pill warn">${r.managerDecision||"نیازمند بررسی"}</span></td>
-          ${isManager?`<td><button class="btn-sm" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','غیبت')">غیبت</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','مرخصی')">مرخصی</button></td>`:""}
+        return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td><td colspan="3" style="color:var(--muted);">بدون عملکرد</td>
+          <td><span class="pill ${r.managerDecision==="تأیید"||r.managerDecision==="مرخصی"?"good":"warn"}">${r.managerDecision||"نیازمند بررسی"}</span>${r.managerNote?`<div style="font-size:11px;color:var(--muted);">${r.managerNote}</div>`:""}</td>
+          ${isManager?(r.managerDecision?`<td>—</td>`:`<td><button class="btn-sm" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','تأیید')">تأیید</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','مرخصی')">مرخصی</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','غیبت')">غیبت</button></td>`):""}
         </tr>`;
       }
       const statusPill = r.managerDecision ? r.managerDecision :
