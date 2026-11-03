@@ -621,6 +621,13 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div id="assistantContent"></div>
     </div>
 
+    <!-- ---- SMART ASSISTANT: DAILY PERFORMANCE ---- -->
+    <div class="view" id="view-assistantDaily">
+      <div class="section-card"><h3>فیلترها</h3><div id="adFilters"></div></div>
+      <div class="tab-pill-group" id="adTabs"></div>
+      <div id="adContent"></div>
+    </div>
+
     <!-- ---- PREDICTION VIEW (پیش‌بینی و تحلیل رفتار پذیرندگان) ---- -->
     <div class="view" id="view-prediction">
       <div class="section-card" id="predictionPickerHolder" style="display:none;">
@@ -1109,6 +1116,11 @@ const SUPPORT_SUBGROUP_DEFS = [
   {id:"collection", label:"جمع‌آوری"},
 ];
 const SUPPORT_SUBGROUP_IDS = SUPPORT_SUBGROUP_DEFS.map(t=>t.id);
+const ASSISTANT_SUBGROUP_DEFS = [
+  {id:"assistant", label:"بازاریابی"},
+  {id:"assistantDaily", label:"عملکرد روزانه"},
+];
+const ASSISTANT_SUBGROUP_IDS = ASSISTANT_SUBGROUP_DEFS.map(t=>t.id);
 let subgroupLastTab = {marketing:"dashboard", support:"pm", empMarketing:"mydashboard", empProcess:"mydashboard", mgrAssistant:"assistant", empAssistant:"assistant"};
 
 function buildTabs(){
@@ -1183,7 +1195,7 @@ function renderSubtabsBar(activeId){
   const mktLast = isMgr ? subgroupLastTab.marketing : subgroupLastTab.empMarketing;
   const inMarketing = mktIds.includes(activeId);
   const inProcess = inMarketing || SUPPORT_SUBGROUP_IDS.includes(activeId);
-  const inAssistant = activeId==="assistant";
+  const inAssistant = ASSISTANT_SUBGROUP_IDS.includes(activeId);
 
   let chips = null;
   if(inProcess){
@@ -1193,7 +1205,7 @@ function renderSubtabsBar(activeId){
       {label:"جمع‌آوری", active: activeId==="collection", action: ()=> switchTab("collection")},
     ];
   }else if(inAssistant){
-    chips = [{label:"بازاریابی", active:true, action: ()=> switchTab("assistant")}];
+    chips = ASSISTANT_SUBGROUP_DEFS.map(t=>({label:t.label, active:t.id===activeId, action:()=>switchTab(t.id)}));
   }
 
   bar1.innerHTML = "";
@@ -1233,7 +1245,7 @@ function switchTab(id){
   if(EMP_MARKETING_SUBGROUP_IDS.includes(id)) subgroupLastTab.empMarketing = id;
   if(SUPPORT_SUBGROUP_IDS.includes(id)){ subgroupLastTab.support = id; subgroupLastTab.empProcess = id; }
   if(id==="mydashboard"||id==="mytrend") subgroupLastTab.empProcess = id;
-  if(id==="assistant"){ subgroupLastTab.mgrAssistant = "assistant"; subgroupLastTab.empAssistant = "assistant"; }
+  if(ASSISTANT_SUBGROUP_IDS.includes(id)){ subgroupLastTab.mgrAssistant = id; subgroupLastTab.empAssistant = id; }
 
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(v=>v.classList.remove("active"));
@@ -1242,10 +1254,10 @@ function switchTab(id){
   let groupBtnId = null;
   if(currentUser.role==="manager"){
     if(MARKETING_SUBGROUP_IDS.includes(id) || SUPPORT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-support";
-    else if(id==="assistant") groupBtnId = "tabbtn-group-mgrAssistant";
+    else if(ASSISTANT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-mgrAssistant";
   }else{
     if(EMP_MARKETING_SUBGROUP_IDS.includes(id) || SUPPORT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-empProcess";
-    else if(id==="assistant") groupBtnId = "tabbtn-group-empAssistant";
+    else if(ASSISTANT_SUBGROUP_IDS.includes(id)) groupBtnId = "tabbtn-group-empAssistant";
   }
   const btn = document.getElementById("tabbtn-"+id) || (groupBtnId ? document.getElementById(groupBtnId) : null);
   if(btn) btn.classList.add("active");
@@ -1262,6 +1274,7 @@ function switchTab(id){
   if(id==="weights") renderWeightsView();
   if(id==="messages") renderMessagesView();
   if(id==="assistant") renderAssistantView();
+  if(id==="assistantDaily") renderAssistantDailyView();
   if(id==="prediction") renderPredictionView();
   if(id==="pm") renderPmView();
   if(id==="dailyperf") renderDailyPerfView();
@@ -2553,6 +2566,338 @@ function renderStrategicAssistant(content){
     </div>`;
   document.getElementById("aiBtnStrategic").onclick = ()=> enhanceWithAI("aiBoxStrategic","aiBtnStrategic", ()=>buildStrategicPrompt(ranking, regionRanking));
 }
+/* ================= ASSISTANT — DAILY PERFORMANCE (analysis + report) =================
+   Built live from switchRecords on every render, so a newly uploaded file is picked up
+   automatically (switchTab / the 8-second auto-refresh both re-render this view). */
+const AD_TARGET = {morning:18, evening:12};          // minimum unique terminals per shift
+const AD_SHIFT_LABEL = {morning:"صبح", evening:"عصر"};
+const AD_DOW_ORDER = [6,0,1,2,3,4];
+const AD_DOW_NAMES = {6:"شنبه",0:"یکشنبه",1:"دوشنبه",2:"سه‌شنبه",3:"چهارشنبه",4:"پنجشنبه"};
+let adState = {emp:"", months:new Set(), allMonths:false, weekdays:new Set(), shift:"all", tab:"analysis"};
+const adF1 = v => Number(v).toLocaleString("fa-IR",{maximumFractionDigits:1});
+
+function adDow(jy,jm,jd){ const g = toGregorian(jy,jm,jd); return new Date(Date.UTC(g.gy,g.gm-1,g.gd)).getUTCDay(); }
+function adMean(a){ return a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0; }
+function adSd(a){ if(a.length<2) return 0; const m=adMean(a); return Math.sqrt(adMean(a.map(x=>(x-m)*(x-m)))); }
+
+function adMonthKeys(){
+  const set = new Set();
+  allSwitchDates().forEach(d=>{ const p=parseShamsiKey(d); set.add(p.jy+"-"+String(p.jm).padStart(2,"0")); });
+  return Array.from(set).sort((a,b)=>b.localeCompare(a)); // newest first
+}
+function adMonthLabel(k){ const [y,m]=k.split("-").map(Number); return PERSIAN_MONTHS[m-1]+" "+y; }
+
+// One cell = one employee, one date, one shift
+function adBuildCells(emp, dates){
+  const cells = [];
+  dates.forEach(d=>{
+    const p = parseShamsiKey(d);
+    const dow = adDow(p.jy,p.jm,p.jd);
+    if(dow===5) return; // Friday off
+    const dayType = getWorkDayTypeShamsi(p.jy,p.jm,p.jd);
+    const shifts = dow===4 ? ["morning"] : ["morning","evening"];
+    const defs = dow===4 ? SHIFT_DEFS.thursday : SHIFT_DEFS.normal;
+    const byShift = {morning:{}, evening:{}};
+    dayRecordsFor(emp,d).forEach(r=>{
+      const sh = classifyLogTime(dayType, r.timeMinutes);
+      if(!sh) return;
+      const key = r.terminalId || ("noid_"+r.store+"_"+r.timeMinutes); // terminal = one finished job
+      const cur = byShift[sh][key];
+      if(!cur || r.timeMinutes < cur.timeMinutes) byShift[sh][key] = r;
+    });
+    shifts.forEach(sh=>{
+      const list = Object.values(byShift[sh]).sort((a,b)=>a.timeMinutes-b.timeMinutes);
+      const def = defs[sh];
+      const cell = {date:d, jy:p.jy, jm:p.jm, jd:p.jd, dow, shift:sh, n:list.length, target:AD_TARGET[sh],
+        present:list.length>0, first:null, last:null, gapsOver:0, maxGap:0, overMin:0, startDelay:0, endEarly:0, lateStart:false, earlyEnd:false};
+      cell.met = cell.n >= cell.target;
+      if(list.length){
+        cell.first = list[0].timeMinutes; cell.last = list[list.length-1].timeMinutes;
+        for(let i=0;i<list.length-1;i++){
+          const g = list[i+1].timeMinutes - list[i].timeMinutes;
+          if(g>cell.maxGap) cell.maxGap = g;
+          if(g>30){ cell.gapsOver++; cell.overMin += g-30; }
+        }
+        cell.startDelay = Math.max(0, cell.first - def.startMin);
+        cell.endEarly = Math.max(0, def.endMin - cell.last);
+        cell.lateStart = cell.startDelay > SHIFT_FLOAT_MIN;
+        cell.earlyEnd = cell.endEarly > SHIFT_FLOAT_MIN;
+      }
+      cells.push(cell);
+    });
+  });
+  return cells;
+}
+
+// Aggregate the cells of one (weekday, shift) group
+function adAggregate(cells, dow, shift){
+  const target = AD_TARGET[shift];
+  const days = cells.length;
+  const presentCells = cells.filter(c=>c.present);
+  const ns = cells.map(c=>c.n);
+  const presentDays = presentCells.length;
+  const absentDays = days - presentDays;
+  const mean = adMean(ns);
+  const metDays = cells.filter(c=>c.met).length;
+  const gapDays = presentCells.filter(c=>c.gapsOver>0).length;
+  const lateDays = presentCells.filter(c=>c.lateStart).length;
+  const earlyDays = presentCells.filter(c=>c.earlyEnd).length;
+  const firsts = presentCells.map(c=>c.first), lasts = presentCells.map(c=>c.last);
+  const agg = {dow, shift, target, days, presentDays, absentDays, mean, min:Math.min(...ns), max:Math.max(...ns),
+    metDays, metPct: days ? metDays/days*100 : 0, achievement: target ? mean/target*100 : 0,
+    avgFirst: firsts.length ? adMean(firsts) : null, avgLast: lasts.length ? adMean(lasts) : null,
+    avgGaps: presentDays ? adMean(presentCells.map(c=>c.gapsOver)) : 0,
+    avgMaxGap: presentDays ? adMean(presentCells.map(c=>c.maxGap)) : 0,
+    gapDays, lateDays, earlyDays, cells, flags:[], pattern:"variable", severity:0};
+  const f = (sev,type,text)=>{ agg.flags.push({sev,type,text}); if(sev>agg.severity) agg.severity=sev; };
+
+  if(days>=2 && presentDays===0){
+    f(3,"absent",`در هر ${fmtNum(days)} روز بررسی‌شده هیچ عملکردی ثبت نشده — یا سرکار نبوده یا ثبتی انجام نشده`);
+    agg.pattern = "constant";
+  }else{
+    if(absentDays>0) f(2,"absent",`${fmtNum(absentDays)} روز از ${fmtNum(days)} روز بدون عملکرد بوده`);
+    if(presentDays>=3){
+      const cv = mean ? adSd(ns)/mean : 0;
+      if(cv < 0.10){ agg.pattern="constant"; f(2,"pattern",`تعداد کار تقریباً هر هفته ثابت است (حدود ${adF1(mean)} مورد) — الگوی تکراری و بدون تغییر`); }
+      if(adSd(firsts)<=5 && adSd(lasts)<=5) { agg.pattern="constant"; f(2,"pattern",`ساعت اولین و آخرین لاگ هر هفته تقریباً دقیقاً یکسان است (${fmtHM(Math.round(agg.avgFirst))} تا ${fmtHM(Math.round(agg.avgLast))})`); }
+    }
+    if(presentDays>0 && metDays===0 && days>=2) f(3,"low",`در هیچ‌کدام از روزها به حداقل ${fmtNum(target)} کار نرسیده (میانگین ${adF1(mean)})`);
+    else if(days>=2 && mean < target*0.7) f(2,"low",`میانگین کار (${adF1(mean)}) کمتر از ۷۰٪ حداقل (${fmtNum(target)}) است`);
+    if(presentDays>=2 && gapDays/presentDays >= 0.7) f(2,"gap",`در ${fmtNum(gapDays)} از ${fmtNum(presentDays)} روز فاصله‌ی بیش از ۳۰ دقیقه بین کارها داشته (میانگین ${adF1(agg.avgGaps)} فاصله در روز)`);
+    if(presentDays>=2 && lateDays/presentDays >= 0.5) f(2,"inout",`در ${fmtNum(lateDays)} از ${fmtNum(presentDays)} روز شروع کار بیش از ۳۰ دقیقه دیر بوده`);
+    if(presentDays>=2 && earlyDays/presentDays >= 0.5) f(2,"inout",`در ${fmtNum(earlyDays)} از ${fmtNum(presentDays)} روز آخرین لاگ بیش از ۳۰ دقیقه زودتر از پایان شیفت بوده`);
+    if(days>=4){
+      const h = Math.floor(days/2);
+      const a1 = adMean(ns.slice(0,h)), a2 = adMean(ns.slice(h));
+      if(a1>0 && a2 < a1*0.75) f(1,"trend",`روند رو به کاهش: میانگین از ${adF1(a1)} به ${adF1(a2)} رسیده`);
+      if(a1>0 && a2 > a1*1.25) agg.trendUp = true;
+    }
+  }
+  return agg;
+}
+
+function adCompute(){
+  const emp = adState.emp;
+  const monthKeys = adMonthKeys();
+  let months = adState.allMonths ? new Set(monthKeys) : new Set(Array.from(adState.months).filter(m=>monthKeys.includes(m)));
+  if(months.size===0 && monthKeys.length) months = new Set([monthKeys[0]]);
+  const dates = allSwitchDates().filter(d=>{ const p=parseShamsiKey(d); return months.has(p.jy+"-"+String(p.jm).padStart(2,"0")); }).sort();
+  let cells = adBuildCells(emp, dates);
+  if(adState.weekdays.size) cells = cells.filter(c=>adState.weekdays.has(c.dow));
+  if(adState.shift!=="all") cells = cells.filter(c=>c.shift===adState.shift);
+  const groups = [];
+  AD_DOW_ORDER.forEach(dow=>{
+    ["morning","evening"].forEach(sh=>{
+      const gc = cells.filter(c=>c.dow===dow && c.shift===sh);
+      if(gc.length) groups.push(adAggregate(gc, dow, sh));
+    });
+  });
+  return {emp, months:Array.from(months), dates, cells, groups, monthKeys};
+}
+
+function renderAssistantDailyView(){
+  const view = document.getElementById("view-assistantDaily");
+  const isMgr = currentUser.role==="manager";
+  const emps = allowedAttendanceEmployees();
+  if(!isMgr) adState.emp = currentUser.name;
+  else if(!emps.includes(adState.emp)) adState.emp = emps[0] || "";
+
+  // ---- filters ----
+  const holder = document.getElementById("adFilters");
+  holder.innerHTML = "";
+  const monthKeys = adMonthKeys();
+  const selMonths = adState.allMonths ? new Set(monthKeys) : (adState.months.size ? adState.months : new Set(monthKeys.slice(0,1)));
+  const mkRow = (label, nodes)=>{
+    const row = document.createElement("div");
+    row.style.cssText = "margin-bottom:12px;";
+    const l = document.createElement("div");
+    l.style.cssText = "font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;";
+    l.textContent = label;
+    row.appendChild(l);
+    const w = document.createElement("div");
+    w.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+    nodes.forEach(n=>w.appendChild(n));
+    row.appendChild(w);
+    holder.appendChild(row);
+  };
+  const pill = (text, active, fn)=>{ const b=document.createElement("button"); b.className="tab-pill"+(active?" active":""); b.textContent=text; b.onclick=fn; return b; };
+
+  if(isMgr){
+    const sel = document.createElement("select");
+    sel.style.cssText = "padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;max-width:280px;width:100%;";
+    sel.innerHTML = emps.map(n=>`<option value="${n}" ${n===adState.emp?"selected":""}>${n}</option>`).join("");
+    sel.onchange = ()=>{ adState.emp = sel.value; renderAssistantDailyView(); };
+    mkRow("پشتیبان", [sel]);
+  }else{
+    const t = document.createElement("span"); t.className="pill neutral"; t.textContent = currentUser.name;
+    mkRow("پشتیبان", [t]);
+  }
+  const monthNodes = [pill("همه ماه‌ها", adState.allMonths, ()=>{ adState.allMonths = !adState.allMonths; adState.months = new Set(); renderAssistantDailyView(); })];
+  monthKeys.forEach(k=> monthNodes.push(pill(adMonthLabel(k), !adState.allMonths && selMonths.has(k), ()=>{
+    adState.allMonths = false;
+    const cur = new Set(selMonths);
+    if(cur.has(k)) cur.delete(k); else cur.add(k);
+    adState.months = cur;
+    renderAssistantDailyView();
+  })));
+  mkRow("ماه (چندانتخابی)", monthNodes);
+  const dowNodes = [pill("همه روزها", adState.weekdays.size===0, ()=>{ adState.weekdays = new Set(); renderAssistantDailyView(); })];
+  AD_DOW_ORDER.forEach(d=> dowNodes.push(pill(AD_DOW_NAMES[d], adState.weekdays.has(d), ()=>{
+    const cur = new Set(adState.weekdays); if(cur.has(d)) cur.delete(d); else cur.add(d);
+    adState.weekdays = cur; renderAssistantDailyView();
+  })));
+  mkRow("روز هفته", dowNodes);
+  mkRow("شیفت", [["all","هر دو شیفت"],["morning","صبح"],["evening","عصر"]].map(([k,l])=> pill(l, adState.shift===k, ()=>{ adState.shift=k; renderAssistantDailyView(); })));
+
+  // ---- analysis / report switch ----
+  const tabs = document.getElementById("adTabs");
+  tabs.innerHTML = "";
+  [["analysis","تحلیل"],["report","گزارش"]].forEach(([k,l])=> tabs.appendChild(pill(l, adState.tab===k, ()=>{ adState.tab=k; renderAssistantDailyView(); })));
+
+  const content = document.getElementById("adContent");
+  if(monthKeys.length===0){
+    content.innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">📂</div>هنوز فایل ورود و خروج (لاگ سوئیچ) آپلود نشده است.</div></div>`;
+    return;
+  }
+  const data = adCompute();
+  if(data.groups.length===0){
+    content.innerHTML = `<div class="section-card"><div class="empty-state">برای فیلتر انتخاب‌شده داده‌ای وجود ندارد (روز جمعه تعطیل است و فقط روزهایی که فایلشان آپلود شده بررسی می‌شوند).</div></div>`;
+    return;
+  }
+  if(adState.tab==="analysis") adRenderAnalysis(content, data);
+  else adRenderReport(content, data);
+}
+
+function adPatternPill(g){
+  if(g.pattern==="constant") return `<span class="pill warn">الگوی ثابت</span>`;
+  return `<span class="pill good">متغیر (طبیعی)</span>`;
+}
+function adMetric(label, value){ return `<tr><td style="color:var(--muted);">${label}</td><td><strong>${value}</strong></td></tr>`; }
+function adShiftBlock(g){
+  const dayList = g.cells.map(c=>c.n);
+  return `<div style="flex:1;min-width:260px;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--navy-pale-2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong style="color:var(--navy);">شیفت ${AD_SHIFT_LABEL[g.shift]}</strong>${adPatternPill(g)}
+    </div>
+    <table style="font-size:12.5px;"><tbody>
+      ${adMetric("روزهای بررسی‌شده", fmtNum(g.days))}
+      ${adMetric("روزهای حاضر / بدون عملکرد", `${fmtNum(g.presentDays)} / ${fmtNum(g.absentDays)}`)}
+      ${adMetric("میانگین کار انجام‌شده (پایانه یکتا)", `${adF1(g.mean)} از حداقل ${fmtNum(g.target)} (${adF1(g.achievement)}٪)`)}
+      ${adMetric("کمترین / بیشترین", `${fmtNum(g.min)} / ${fmtNum(g.max)}`)}
+      ${adMetric("روزهای رسیدن به حداقل", `${fmtNum(g.metDays)} از ${fmtNum(g.days)} (${adF1(g.metPct)}٪)`)}
+      ${adMetric("میانگین ورود / خروج", g.avgFirst===null ? "—" : `${fmtHM(Math.round(g.avgFirst))} / ${fmtHM(Math.round(g.avgLast))}`)}
+      ${adMetric("روز با شروع دیر / خروج زود", `${fmtNum(g.lateDays)} / ${fmtNum(g.earlyDays)}`)}
+      ${adMetric("فاصله بیش از ۳۰ دقیقه (میانگین در روز)", `${adF1(g.avgGaps)} — بزرگ‌ترین فاصله میانگین ${fmtNum(Math.round(g.avgMaxGap))} دقیقه`)}
+    </tbody></table>
+    <div style="margin-top:8px;font-size:12px;color:var(--muted);">روند تعداد کار (به ترتیب تاریخ): <strong style="color:var(--ink);">${dayList.map(n=>fmtNum(n)).join(" ، ")}</strong></div>
+    ${g.flags.length ? `<ul style="margin:8px 0 0;padding-right:18px;font-size:12.5px;line-height:1.9;">${g.flags.sort((a,b)=>b.sev-a.sev).map(fl=>`<li style="color:${fl.sev>=3?"var(--warn)":fl.sev===2?"var(--amber)":"var(--ink)"};">${fl.text}</li>`).join("")}</ul>` : `<div style="margin-top:8px;font-size:12.5px;color:var(--good);">✔ مورد قابل‌توجهی دیده نشد.</div>`}
+    <details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12px;color:var(--navy);font-weight:700;">جزئیات روزبه‌روز</summary>
+      <table style="font-size:12px;margin-top:6px;"><thead><tr><th>تاریخ</th><th>کار</th><th>ورود</th><th>خروج</th><th>فاصله >۳۰د</th></tr></thead><tbody>
+      ${g.cells.map(c=>`<tr><td>${formatShamsi(c.jy,c.jm,c.jd)}</td><td>${c.present?fmtNum(c.n):`<span class="pill warn">بدون عملکرد</span>`}</td><td>${c.present?fmtHM(c.first):"—"}</td><td>${c.present?fmtHM(c.last):"—"}</td><td>${c.present?fmtNum(c.gapsOver):"—"}</td></tr>`).join("")}
+      </tbody></table></details>
+  </div>`;
+}
+
+function adFinalSummary(data){
+  const gl = data.groups;
+  const name = g => `${AD_DOW_NAMES[g.dow]} ${AD_SHIFT_LABEL[g.shift]}`;
+  const sections = [];
+  const low = gl.filter(g=>g.flags.some(f=>f.type==="low")).sort((a,b)=>a.achievement-b.achievement);
+  if(low.length) sections.push({title:"کم‌کاری (نسبت به حداقل ۱۸ صبح / ۱۲ عصر)", sev:3, items:low.map(g=>`${name(g)}: میانگین ${adF1(g.mean)} از ${fmtNum(g.target)} (${adF1(g.achievement)}٪) — فقط ${fmtNum(g.metDays)} روز از ${fmtNum(g.days)} روز به حداقل رسیده`)});
+  const abs = gl.filter(g=>g.absentDays>0).sort((a,b)=>b.absentDays/b.days-a.absentDays/a.days);
+  if(abs.length) sections.push({title:"روزهای بدون عملکرد (نیازمند بررسی: مرخصی، غیبت یا ثبت‌نشدن)", sev:3, items:abs.map(g=>`${name(g)}: ${fmtNum(g.absentDays)} از ${fmtNum(g.days)} روز بدون عملکرد`)});
+  const io = gl.filter(g=>g.flags.some(f=>f.type==="inout"));
+  if(io.length) sections.push({title:"مشکل ورود و خروج", sev:2, items:io.map(g=>`${name(g)}: ${g.flags.filter(f=>f.type==="inout").map(f=>f.text).join("؛ ")}`)});
+  const gp = gl.filter(g=>g.flags.some(f=>f.type==="gap")).sort((a,b)=>b.avgGaps-a.avgGaps);
+  if(gp.length) sections.push({title:"فاصله زمانی زیاد بین کارها", sev:2, items:gp.map(g=>`${name(g)}: ${g.flags.filter(f=>f.type==="gap").map(f=>f.text).join("؛ ")}`)});
+  const pt = gl.filter(g=>g.flags.some(f=>f.type==="pattern"));
+  if(pt.length) sections.push({title:"الگوی ثابت و تکراری (می‌تواند نشانه‌ی ایراد یا بی‌تحرکی باشد)", sev:2, items:pt.map(g=>`${name(g)}: ${g.flags.filter(f=>f.type==="pattern").map(f=>f.text).join("؛ ")}`)});
+  const tr = gl.filter(g=>g.flags.some(f=>f.type==="trend"));
+  if(tr.length) sections.push({title:"روند رو به کاهش", sev:1, items:tr.map(g=>`${name(g)}: ${g.flags.filter(f=>f.type==="trend").map(f=>f.text).join("؛ ")}`)});
+  // morning vs evening on the same weekday
+  const cmp = [];
+  AD_DOW_ORDER.forEach(d=>{
+    const m = gl.find(g=>g.dow===d && g.shift==="morning"), e = gl.find(g=>g.dow===d && g.shift==="evening");
+    if(!m || !e || m.achievement<=0) return;
+    if(e.achievement < m.achievement*0.6) cmp.push(`${AD_DOW_NAMES[d]}: عصر (${adF1(e.achievement)}٪ حداقل) نسبت به صبح (${adF1(m.achievement)}٪ حداقل) به‌مراتب کم‌کارتر بوده`);
+    else if(m.achievement < e.achievement*0.6 && e.achievement>0) cmp.push(`${AD_DOW_NAMES[d]}: صبح (${adF1(m.achievement)}٪ حداقل) نسبت به عصر (${adF1(e.achievement)}٪ حداقل) به‌مراتب کم‌کارتر بوده`);
+  });
+  if(cmp.length) sections.push({title:"مقایسه‌ی صبح و عصر در یک روز", sev:2, items:cmp});
+  const good = gl.filter(g=>g.severity===0);
+  return {sections, good: good.map(name)};
+}
+
+function adRenderAnalysis(content, data){
+  const byDow = {};
+  data.groups.forEach(g=>{ (byDow[g.dow] = byDow[g.dow]||[]).push(g); });
+  const cards = AD_DOW_ORDER.filter(d=>byDow[d]).map(d=>`
+    <div class="section-card">
+      <h3>${AD_DOW_NAMES[d]}</h3>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">${byDow[d].map(adShiftBlock).join("")}</div>
+    </div>`).join("");
+  const fin = adFinalSummary(data);
+  const finHtml = fin.sections.length ? fin.sections.sort((a,b)=>b.sev-a.sev).map(s=>`
+      <div style="margin-bottom:14px;"><div style="font-weight:800;color:${s.sev>=3?"var(--warn)":s.sev===2?"var(--amber)":"var(--navy)"};margin-bottom:4px;">${s.title}</div>
+      <ul style="margin:0;padding-right:20px;font-size:13px;line-height:2;">${s.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("")
+    : `<div style="color:var(--good);font-weight:700;">✔ در بازه‌ی انتخاب‌شده مورد قابل‌توجهی دیده نشد.</div>`;
+  content.innerHTML = `
+    <div class="notice">تحلیل ${data.emp} — ${fmtNum(data.dates.length)} روز داده در ماه(های) ${data.months.sort().map(adMonthLabel).join("، ")}. «کار انجام‌شده» = تعداد پایانه‌ی یکتا در هر شیفت (هر پایانه یک کار، حتی اگر چند فرآیند داشته باشد). حداقل: صبح ${fmtNum(AD_TARGET.morning)}، عصر ${fmtNum(AD_TARGET.evening)}.</div>
+    ${cards}
+    <div class="section-card"><h3>جمع‌بندی نهایی</h3>${finHtml}
+      ${fin.good.length ? `<div style="margin-top:6px;font-size:12.5px;color:var(--good);">بدون مشکل: ${fin.good.join("، ")}</div>` : ""}
+    </div>`;
+}
+
+function adRenderReport(content, data){
+  const gl = data.groups;
+  const cells = data.cells;
+  const presentCells = cells.filter(c=>c.present);
+  const metCells = cells.filter(c=>c.met).length;
+  content.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="label">شیفت‌های بررسی‌شده</div><div class="value">${fmtNum(cells.length)}</div></div>
+      <div class="kpi-card"><div class="label">شیفت‌های دارای عملکرد</div><div class="value">${fmtNum(presentCells.length)}</div><div class="sub">${fmtNum(cells.length-presentCells.length)} شیفت بدون عملکرد</div></div>
+      <div class="kpi-card"><div class="label">رسیدن به حداقل</div><div class="value">${adF1(cells.length?metCells/cells.length*100:0)}٪</div><div class="sub">${fmtNum(metCells)} از ${fmtNum(cells.length)} شیفت</div></div>
+      <div class="kpi-card"><div class="label">میانگین کار در شیفت دارای عملکرد</div><div class="value">${adF1(adMean(presentCells.map(c=>c.n)))}</div></div>
+      <div class="kpi-card"><div class="label">جمع فاصله‌های بیش از ۳۰ دقیقه</div><div class="value">${fmtNum(presentCells.reduce((s,c)=>s+c.gapsOver,0))}</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="section-card"><h3>میانگین کار — شیفت صبح (حداقل ${fmtNum(AD_TARGET.morning)})</h3><div id="chartAdMorning"></div></div>
+      <div class="section-card"><h3>میانگین کار — شیفت عصر (حداقل ${fmtNum(AD_TARGET.evening)})</h3><div id="chartAdEvening"></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="section-card"><h3>درصد رسیدن به حداقل (به تفکیک روز و شیفت)</h3><div id="chartAdMet"></div></div>
+      <div class="section-card"><h3>میانگین تعداد فاصله‌های بیش از ۳۰ دقیقه</h3><div id="chartAdGaps"></div></div>
+    </div>
+    <div class="section-card"><h3>روز با شروع دیر یا خروج زود</h3><div id="chartAdInout"></div></div>
+    <div id="adLineCharts"></div>`;
+  const lab = g => `${AD_DOW_NAMES[g.dow]}`;
+  const part = sh => gl.filter(g=>g.shift===sh);
+  const m = part("morning"), e = part("evening");
+  chartBars("chartAdMorning", m.map(g=>({label:lab(g), value:Number(g.mean.toFixed(1)), color: g.mean>=g.target?"#2e7d5b":"#c0392b"})), {formatter:v=>adF1(v), maxValue:Math.max(AD_TARGET.morning, ...m.map(g=>g.mean))});
+  chartBars("chartAdEvening", e.map(g=>({label:lab(g), value:Number(g.mean.toFixed(1)), color: g.mean>=g.target?"#2e7d5b":"#c0392b"})), {formatter:v=>adF1(v), maxValue:Math.max(AD_TARGET.evening, ...e.map(g=>g.mean))});
+  chartBars("chartAdMet", gl.map(g=>({label:`${AD_DOW_NAMES[g.dow]} ${AD_SHIFT_LABEL[g.shift]}`, value:Number(g.metPct.toFixed(1)), color: g.shift==="morning"?"#1e3a5f":"#c9a227"})), {formatter:v=>adF1(v)+"٪", maxValue:100});
+  chartBars("chartAdGaps", gl.map(g=>({label:`${AD_DOW_NAMES[g.dow]} ${AD_SHIFT_LABEL[g.shift]}`, value:Number(g.avgGaps.toFixed(2)), color: g.shift==="morning"?"#4472a8":"#a5652f"})), {formatter:v=>adF1(v)});
+  chartBars("chartAdInout", gl.map(g=>({label:`${AD_DOW_NAMES[g.dow]} ${AD_SHIFT_LABEL[g.shift]} (دیر/زود)`, value:g.lateDays+g.earlyDays, color:"#c0392b"})), {formatter:v=>fmtNum(v)+" روز"});
+
+  // trend line per weekday (one point per date)
+  const lineHolder = document.getElementById("adLineCharts");
+  const dows = AD_DOW_ORDER.filter(d=>gl.some(g=>g.dow===d));
+  lineHolder.innerHTML = dows.map(d=>`<div class="section-card"><h3>روند ${AD_DOW_NAMES[d]}ها — تعداد کار در هر شیفت</h3><div id="chartAdLine_${d}"></div></div>`).join("");
+  dows.forEach(d=>{
+    const dayCells = cells.filter(c=>c.dow===d);
+    const dates = Array.from(new Set(dayCells.map(c=>c.date))).sort();
+    const labels = dates.map(x=>{ const p=parseShamsiKey(x); return `${p.jm}/${p.jd}`; });
+    const series = [];
+    ["morning","evening"].forEach(sh=>{
+      if(!dayCells.some(c=>c.shift===sh)) return;
+      series.push({name:`کار شیفت ${AD_SHIFT_LABEL[sh]}`, values:dates.map(x=>{ const c=dayCells.find(k=>k.date===x && k.shift===sh); return c?c.n:0; }), color: sh==="morning"?"#1e3a5f":"#c9a227"});
+      series.push({name:`حداقل ${AD_SHIFT_LABEL[sh]}`, values:dates.map(()=>AD_TARGET[sh]), color: sh==="morning"?"#8fb3d9":"#e0c36a"});
+    });
+    chartLine("chartAdLine_"+d, labels, series, {height:240});
+  });
+}
+
 function renderAssistantView(){
   const tier = assistantRoleTier();
   const tabs = ASSISTANT_TABS[tier];
