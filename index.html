@@ -2695,6 +2695,73 @@ function adCompute(){
   return {emp, months:Array.from(months), dates, cells, groups, monthKeys};
 }
 
+// ---- Repeated terminals: same terminal processed again on another day ----
+function adSelectedMonths(){
+  const monthKeys = adMonthKeys();
+  let months = adState.allMonths ? new Set(monthKeys) : new Set(Array.from(adState.months).filter(m=>monthKeys.includes(m)));
+  if(months.size===0 && monthKeys.length) months = new Set([monthKeys[0]]);
+  return months;
+}
+function adRepeatCompute(){
+  const months = adSelectedMonths();
+  const by = {}; // terminal|month -> {dates:{date:{processes,employees}}}
+  switchRecords.forEach(r=>{
+    if(!isValidShamsiKey(r.dateShamsi) || !r.terminalId) return;
+    const p = parseShamsiKey(r.dateShamsi);
+    const mk = p.jy+"-"+String(p.jm).padStart(2,"0");
+    if(!months.has(mk)) return;
+    const key = r.terminalId+"|"+mk;
+    const o = by[key] || (by[key] = {terminalId:r.terminalId, month:mk, stores:new Set(), employees:new Set(), days:{}});
+    if(r.store) o.stores.add(r.store);
+    if(r.employee) o.employees.add(r.employee);
+    const d = o.days[r.dateShamsi] || (o.days[r.dateShamsi] = {processes:new Set(), employees:new Set()});
+    if(r.process) d.processes.add(r.process);
+    if(r.employee) d.employees.add(r.employee);
+  });
+  const rows = [];
+  Object.values(by).forEach(o=>{
+    if(!o.employees.has(adState.emp)) return;
+    const dates = Object.keys(o.days).sort();
+    if(dates.length<2) return;
+    const dn = dates.map(d=>{ const p=parseShamsiKey(d); return {d, num:j2d(p.jy,p.jm,p.jd), dow:adDow(p.jy,p.jm,p.jd)}; });
+    const consecutive = [];
+    for(let i=0;i<dn.length-1;i++){
+      const diff = dn[i+1].num-dn[i].num;
+      if(diff===1 || (diff===2 && dn[i].dow===4 && dn[i+1].dow===6)) consecutive.push([dn[i].d, dn[i+1].d]);
+    }
+    const over2 = dates.length>2;
+    if(!over2 && consecutive.length===0) return;
+    rows.push({...o, dates, over2, consecutive});
+  });
+  rows.sort((a,b)=> (b.dates.length-a.dates.length) || (b.consecutive.length-a.consecutive.length));
+  return {months:Array.from(months), rows};
+}
+function adRenderRepeat(content){
+  const data = adRepeatCompute();
+  const fd = d=>{ const p=parseShamsiKey(d); return formatShamsi(p.jy,p.jm,p.jd)+" ("+AD_DOW_NAMES[adDow(p.jy,p.jm,p.jd)]+")"; };
+  const n2 = data.rows.filter(r=>r.over2).length, nc = data.rows.filter(r=>r.consecutive.length).length;
+  const body = data.rows.map(r=>`<tr>
+    <td><strong>${r.terminalId}</strong></td>
+    <td>${Array.from(r.stores).join("، ")||"—"}</td>
+    <td>${adMonthLabel(r.month)}</td>
+    <td>${fmtNum(r.dates.length)}</td>
+    <td style="font-size:12px;line-height:1.9;">${r.dates.map(d=>`<div>${fd(d)} — <span style="color:var(--muted);">${Array.from(r.days[d].processes).join("، ")||"—"}${r.days[d].employees.size>1?" · "+Array.from(r.days[d].employees).join("، "):""}</span></div>`).join("")}</td>
+    <td>${r.over2?`<span class="pill warn">بیش از ۲ بار در ماه</span> `:""}${r.consecutive.length?`<span class="pill warn">روزهای کاری پشت‌سرهم</span>`:""}</td>
+  </tr>`).join("");
+  content.innerHTML = `
+    <div class="notice">بررسی تراکنش/فرآیند تکراری برای ${adState.emp} در ماه(های) ${data.months.sort().map(adMonthLabel).join("، ")}. هر ترمینال در یک روز یک بار حساب می‌شود (چند فرآیند در همان روز تکرار نیست). فیلتر روز هفته و شیفت در این بخش اعمال نمی‌شود.</div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="label">ترمینال‌های مشکوک به تکرار</div><div class="value">${fmtNum(data.rows.length)}</div></div>
+      <div class="kpi-card"><div class="label">بیش از ۲ بار در ماه</div><div class="value">${fmtNum(n2)}</div></div>
+      <div class="kpi-card"><div class="label">فرآیند در روزهای کاری پشت‌سرهم</div><div class="value">${fmtNum(nc)}</div></div>
+    </div>
+    <div class="section-card"><h3>ترمینال‌های دارای فرآیند تکراری</h3>
+      ${data.rows.length ? `<div class="notice" style="background:#fbe9e7;border-color:#f1b9b2;color:var(--warn);">⚠ ${fmtNum(data.rows.length)} ترمینال در این بازه فرآیند تکراری داشته‌اند؛ لطفاً بررسی شود که کار تکراری انجام نشده باشد.</div>
+      <table><thead><tr><th>شماره ترمینال</th><th>پذیرنده</th><th>ماه</th><th>تعداد روز</th><th>تاریخ‌ها و فرآیندها</th><th>هشدار</th></tr></thead><tbody>${body}</tbody></table>`
+      : `<div class="empty-state"><div class="big">✅</div>ترمینال تکراری در بازه‌ی انتخاب‌شده دیده نشد.</div>`}
+    </div>`;
+}
+
 function renderAssistantDailyView(){
   const view = document.getElementById("view-assistantDaily");
   const isMgr = currentUser.role==="manager";
@@ -2752,13 +2819,14 @@ function renderAssistantDailyView(){
   // ---- analysis / report switch ----
   const tabs = document.getElementById("adTabs");
   tabs.innerHTML = "";
-  [["analysis","تحلیل"],["report","گزارش"]].forEach(([k,l])=> tabs.appendChild(pill(l, adState.tab===k, ()=>{ adState.tab=k; renderAssistantDailyView(); })));
+  [["analysis","تحلیل"],["report","گزارش"],["repeat","تراکنش تکراری"]].forEach(([k,l])=> tabs.appendChild(pill(l, adState.tab===k, ()=>{ adState.tab=k; renderAssistantDailyView(); })));
 
   const content = document.getElementById("adContent");
   if(monthKeys.length===0){
     content.innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">📂</div>هنوز فایل ورود و خروج (لاگ سوئیچ) آپلود نشده است.</div></div>`;
     return;
   }
+  if(adState.tab==="repeat"){ adRenderRepeat(content); return; }
   const data = adCompute();
   if(data.groups.length===0){
     content.innerHTML = `<div class="section-card"><div class="empty-state">برای فیلتر انتخاب‌شده داده‌ای وجود ندارد (روز جمعه تعطیل است و فقط روزهایی که فایلشان آپلود شده بررسی می‌شوند).</div></div>`;
@@ -2792,8 +2860,8 @@ function adShiftBlock(g){
     <div style="margin-top:8px;font-size:12px;color:var(--muted);">روند تعداد کار (به ترتیب تاریخ): <strong style="color:var(--ink);">${dayList.map(n=>fmtNum(n)).join(" ، ")}</strong></div>
     ${g.flags.length ? `<ul style="margin:8px 0 0;padding-right:18px;font-size:12.5px;line-height:1.9;">${g.flags.sort((a,b)=>b.sev-a.sev).map(fl=>`<li style="color:${fl.sev>=3?"var(--warn)":fl.sev===2?"var(--amber)":"var(--ink)"};">${fl.text}</li>`).join("")}</ul>` : `<div style="margin-top:8px;font-size:12.5px;color:var(--good);">✔ مورد قابل‌توجهی دیده نشد.</div>`}
     <details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12px;color:var(--navy);font-weight:700;">جزئیات روزبه‌روز</summary>
-      <table style="font-size:12px;margin-top:6px;"><thead><tr><th>تاریخ</th><th>کار</th><th>ورود</th><th>خروج</th><th>فاصله >۳۰د</th></tr></thead><tbody>
-      ${g.cells.map(c=>`<tr><td>${formatShamsi(c.jy,c.jm,c.jd)}</td><td>${c.present?fmtNum(c.n):`<span class="pill warn">بدون عملکرد</span>`}</td><td>${c.present?fmtHM(c.first):"—"}</td><td>${c.present?fmtHM(c.last):"—"}</td><td>${c.present?fmtNum(c.gapsOver):"—"}</td></tr>`).join("")}
+      <table style="font-size:12px;margin-top:6px;"><thead><tr><th>تاریخ</th><th>روز</th><th>کار</th><th>ورود</th><th>خروج</th><th>فاصله >۳۰د</th></tr></thead><tbody>
+      ${g.cells.map(c=>`<tr><td>${formatShamsi(c.jy,c.jm,c.jd)}</td><td>${dayNameShamsi(c.jy,c.jm,c.jd)}</td><td>${c.present?fmtNum(c.n):`<span class="pill warn">بدون عملکرد</span>`}</td><td>${c.present?fmtHM(c.first):"—"}</td><td>${c.present?fmtHM(c.last):"—"}</td><td>${c.present?fmtNum(c.gapsOver):"—"}</td></tr>`).join("")}
       </tbody></table></details>
   </div>`;
 }
@@ -4165,6 +4233,14 @@ function shamsiToIso(jy,jm,jd){
   return `${g.gy}-${String(g.gm).padStart(2,"0")}-${String(g.gd).padStart(2,"0")}`;
 }
 const JALALI_MONTH_NAMES = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+function shamsiToIsoParts(str){
+  const m = String(str||"").replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
+  return m ? {jy:+m[1], jm:+m[2], jd:+m[3]} : null;
+}
+function dayNameShamsi(jy,jm,jd){
+  const g = toGregorian(jy,jm,jd);
+  return ["یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه","پنجشنبه","جمعه","شنبه"][new Date(Date.UTC(g.gy,g.gm-1,g.gd)).getUTCDay()];
+}
 function formatShamsi(jy,jm,jd){ return `${jy}/${String(jm).padStart(2,"0")}/${String(jd).padStart(2,"0")}`; }
 function formatShamsiLong(jy,jm,jd){ return `${jd} ${JALALI_MONTH_NAMES[jm-1]} ${jy}`; }
 function todayShamsi(){
@@ -4390,8 +4466,8 @@ function showDpDailyDetail(employee){
   document.getElementById("dpDailyDetailTitle").textContent = "جزئیات روزانه — " + employee;
   const recs = (window.__dpReportFiltered||[]).filter(r=>r.employee===employee).sort((a,b)=>a.dateIso.localeCompare(b.dateIso));
   document.getElementById("dpDailyDetailHolder").innerHTML = recs.length ? `
-    <table><thead><tr><th>تاریخ</th>${DAILY_INDICATORS.map(ind=>`<th>${ind.label}</th>`).join("")}</tr></thead>
-    <tbody>${recs.map(r=>`<tr><td>${r.dateShamsi}</td>${DAILY_INDICATORS.map(ind=>`<td>${fmtNum(r[ind.key]||0)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+    <table><thead><tr><th>تاریخ</th><th>روز</th>${DAILY_INDICATORS.map(ind=>`<th>${ind.label}</th>`).join("")}</tr></thead>
+    <tbody>${recs.map(r=>`<tr><td>${r.dateShamsi}</td><td>${(()=>{ const q=shamsiToIsoParts(r.dateShamsi); return q?dayNameShamsi(q.jy,q.jm,q.jd):"—"; })()}</td>${DAILY_INDICATORS.map(ind=>`<td>${fmtNum(r[ind.key]||0)}</td>`).join("")}</tr>`).join("")}</tbody></table>
   ` : `<div class="empty-state">داده‌ای موجود نیست.</div>`;
   card.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
@@ -4803,7 +4879,7 @@ function renderAttendanceView(content){
           </select></div>` : ""}
         <div><label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">فیلتر تاریخ:</label>
           <select id="attDateFilter" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;min-width:160px;">
-            <option value="">همه تاریخ‌ها</option>${allDates.map(d=>{ const p=parseShamsiKey(d); return `<option value="${d}">${formatShamsi(p.jy,p.jm,p.jd)}</option>`; }).join("")}
+            <option value="">همه تاریخ‌ها</option>${allDates.map(d=>{ const p=parseShamsiKey(d); return `<option value="${d}">${formatShamsi(p.jy,p.jm,p.jd)} — ${dayNameShamsi(p.jy,p.jm,p.jd)}</option>`; }).join("")}
           </select></div>
       </div>
       <div class="tab-pill-group" id="attGapPills"></div>
@@ -4853,7 +4929,7 @@ function renderAttendanceView(content){
       ? `<p style="color:var(--warn);font-weight:700;">فاصله: ${c.gapMinutes} دقیقه (${c.overMinutes} دقیقه بیش از حد مجاز ۳۰ دقیقه‌ای)</p>`
       : `<p style="color:var(--good);font-weight:700;">فاصله: ${c.gapMinutes} دقیقه (در محدوده مجاز)</p>`;
     return `<div class="msg-item">
-      <div class="msg-head"><span>${caseIcon} <b>${c.employee}</b> — ${formatShamsi(c.jy,c.jm,c.jd)} (${shiftLabel})</span>${c.over30?`<span class="pill ${statusCls}">${c.status}</span>`:""}</div>
+      <div class="msg-head"><span>${caseIcon} <b>${c.employee}</b> — ${formatShamsi(c.jy,c.jm,c.jd)} ${dayNameShamsi(c.jy,c.jm,c.jd)} (${shiftLabel})</span>${c.over30?`<span class="pill ${statusCls}">${c.status}</span>`:""}</div>
       <p style="margin-top:6px;">فروشگاه اول: ${c.prevStore||"—"} (پایانه ${c.prevTerminal||"—"}${c.prevProcess?" — "+c.prevProcess:""}) ساعت ورود ${fmtHM(c.prevTime)}</p>
       <p>فروشگاه بعدی: ${c.nextStore||"—"} (پایانه ${c.nextTerminal||"—"}${c.nextProcess?" — "+c.nextProcess:""}) ساعت ورود ${fmtHM(c.nextTime)}</p>
       ${gapLine}
@@ -4944,7 +5020,7 @@ function renderCheckInOutView(content){
           </select></div>` : ""}
         <div><label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">فیلتر تاریخ:</label>
           <select id="cioDateFilter" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;min-width:160px;">
-            <option value="all">همه تاریخ‌ها</option>${allDates.map(d=>{ const p=parseShamsiKey(d); return `<option value="${d}">${formatShamsi(p.jy,p.jm,p.jd)}</option>`; }).join("")}
+            <option value="all">همه تاریخ‌ها</option>${allDates.map(d=>{ const p=parseShamsiKey(d); return `<option value="${d}">${formatShamsi(p.jy,p.jm,p.jd)} — ${dayNameShamsi(p.jy,p.jm,p.jd)}</option>`; }).join("")}
           </select></div>
       </div>
       <div id="cioTableHolder"></div>
@@ -4966,11 +5042,11 @@ function renderCheckInOutView(content){
   dateSel.onchange = (e)=>{ cioDateFilter = e.target.value; renderCheckInOutView(content); };
 
   document.getElementById("cioTableHolder").innerHTML = rows.length ? `
-    <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>شیفت</th><th>ورود</th><th>خروج</th><th>مدت کارکرد</th><th>وضعیت</th>${isManager?"<th>اقدام</th>":""}</tr></thead>
+    <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>روز</th><th>شیفت</th><th>ورود</th><th>خروج</th><th>مدت کارکرد</th><th>وضعیت</th>${isManager?"<th>اقدام</th>":""}</tr></thead>
     <tbody>${rows.map(r=>{
       const shiftLabel = r.shift==="morning"?"صبح":"عصر";
       if(r.noMission){
-        return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td><td colspan="3" style="color:var(--muted);">بدون عملکرد</td>
+        return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${dayNameShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td><td colspan="3" style="color:var(--muted);">بدون عملکرد</td>
           <td><span class="pill ${r.managerDecision==="تأیید"||r.managerDecision==="مرخصی"?"good":"warn"}">${r.managerDecision||"نیازمند بررسی"}</span>${r.managerNote?`<div style="font-size:11px;color:var(--muted);">${r.managerNote}</div>`:""}</td>
           ${isManager?(r.managerDecision?`<td>—</td>`:`<td><button class="btn-sm" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','تأیید')">تأیید</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','مرخصی')">مرخصی</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','غیبت')">غیبت</button></td>`):""}
         </tr>`;
@@ -4979,7 +5055,7 @@ function renderCheckInOutView(content){
         (r.floatViolation ? "تأخیر خارج از شناوری" : (r.shortfall>0 ? "کسری ساعت کاری" : "عادی"));
       const statusCls = r.managerDecision==="تأیید" ? "good" : (r.floatViolation||r.shortfall>0) ? "warn" : "good";
       const shortfallNote = r.shortfall>0 ? `<div style="color:var(--warn);font-size:11px;">کسری: ${fmtHM(r.shortfall)}</div>` : "";
-      return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td>
+      return `<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${dayNameShamsi(r.jy,r.jm,r.jd)}</td><td>${shiftLabel}</td>
         <td>${fmtHM(r.firstTime)}</td><td>${fmtHM(r.lastTime)}</td><td>${fmtHM(r.inferredDuration)} / ${fmtHM(r.scheduledDuration)}${shortfallNote}</td>
         <td><span class="pill ${statusCls}">${statusPill}</span>${r.managerNote?`<div style="font-size:11px;color:var(--muted);">${r.managerNote}</div>`:""}</td>
         ${isManager && !r.managerDecision ?`<td><button class="btn-sm" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','تأیید')">تأیید</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','مرخصی')">مرخصی</button> <button class="btn-sm secondary" onclick="setCioDecision('${r.employee}','${r.dateShamsi}','${r.shift}','غیبت')">غیبت</button></td>`:(isManager?"<td>—</td>":"")}
@@ -4987,8 +5063,8 @@ function renderCheckInOutView(content){
     }).join("")}</tbody></table>` : `<div class="empty-state">داده‌ای موجود نیست.</div>`;
 
   document.getElementById("cioOutOfWindowHolder").innerHTML = outOfWindow.length ? `
-    <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>ساعت</th><th>فروشگاه</th><th>پایانه</th><th>فرآیند</th></tr></thead>
-    <tbody>${outOfWindow.map(r=>`<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${fmtHM(r.timeMinutes)}</td><td>${r.store||"—"}</td><td>${r.terminalId||"—"}</td><td>${r.process||"—"}</td></tr>`).join("")}</tbody></table>
+    <table><thead><tr><th>پشتیبان</th><th>تاریخ</th><th>روز</th><th>ساعت</th><th>فروشگاه</th><th>پایانه</th><th>فرآیند</th></tr></thead>
+    <tbody>${outOfWindow.map(r=>`<tr><td>${r.employee}</td><td>${formatShamsi(r.jy,r.jm,r.jd)}</td><td>${dayNameShamsi(r.jy,r.jm,r.jd)}</td><td>${fmtHM(r.timeMinutes)}</td><td>${r.store||"—"}</td><td>${r.terminalId||"—"}</td><td>${r.process||"—"}</td></tr>`).join("")}</tbody></table>
   ` : `<div class="empty-state">موردی خارج از بازه شیفت ثبت نشده است.</div>`;
 }
 async function setCioDecision(employee, dateShamsi, shift, decision){
