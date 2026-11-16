@@ -482,6 +482,10 @@ tbody tr:hover{background:var(--navy-pale-2);}
     <!-- ---- REGIONS VIEW (manager only) ---- -->
     <div class="view" id="view-regions">
       <div class="tab-pill-group" id="regionsSubTabs"></div>
+      <div id="regionsGroupGeneral" style="display:none;">
+        <div class="section-card"><h3>فیلتر ماه</h3><div id="giRegFilters"></div></div>
+        <div id="giRegBody"></div>
+      </div>
       <div id="regionsGroupMarketing">
       <div id="regionsFiltersHolder"></div>
       <div class="section-card">
@@ -621,6 +625,11 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div id="assistantContent"></div>
     </div>
 
+    <div class="view" id="view-generalInfo">
+      <div class="section-card"><h3>فیلترها</h3><div id="giFilters"></div></div>
+      <div id="giBody"></div>
+    </div>
+
     <!-- ---- SMART ASSISTANT: DAILY PERFORMANCE ---- -->
     <div class="view" id="view-assistantDaily">
       <div class="section-card"><h3>فیلترها</h3><div id="adFilters"></div></div>
@@ -684,6 +693,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
 
     <!-- ---- UPLOAD VIEW (Mojtaba Taherkhani only) ---- -->
     <div class="view" id="view-upload">
+      <div id="giEntryHolder"></div>
+      <div id="uploadExcelWrap">
       <div class="section-card">
         <h3>آپلود فایل اکسل عملکرد</h3>
         <div class="upload-box">
@@ -742,6 +753,7 @@ tbody tr:hover{background:var(--navy-pale-2);}
           <button class="btn-sm secondary" onclick="cancelSwitchUpload()">انصراف</button>
         </div>
         <div id="switchMappingMsg" class="small-note"></div>
+      </div>
       </div>
     </div>
 
@@ -859,6 +871,7 @@ let records = [];       // normalized records from excel
 let pmRecords = [];     // separate PM dataset, uploaded independently by the site admin
 let dailyPerfRecords = []; // daily performance log entries, one per (employee, date)
 let pendingTasks = [];     // "کارهای در انتظار" workflow items
+let generalInfo = [];            // manual monthly general info per employee
 let switchRecords = [];           // raw switch-transaction log rows, accumulated day by day
 let attendanceCaseDecisions = []; // manager decisions on ">30min gap" cases (حضور روزانه)
 let checkInOutDecisions = [];     // manager decisions per (employee, date, shift) for ورود و خروج
@@ -973,6 +986,7 @@ async function loadAll(){
   switchRecords = await supaGetAppData("switch_records", []);
   attendanceCaseDecisions = await supaGetAppData("attendance_case_decisions", []);
   checkInOutDecisions = await supaGetAppData("checkinout_decisions", []);
+  generalInfo = await supaGetAppData("general_info", []);
   weights = await supaGetAppData("weights", DEFAULT_WEIGHTS);
   messages = await supaGetMessages();
 }
@@ -1005,7 +1019,7 @@ function stopAutoRefresh(){
 async function checkForUpdates(){
   if(!currentUser) return;
   try{
-    const [newRecords, newPmRecords, newDailyPerf, newTasks, newSwitch, newAttCases, newCio, newWeights, newMessages] = await Promise.all([
+    const [newRecords, newPmRecords, newDailyPerf, newTasks, newSwitch, newAttCases, newCio, newWeights, newMessages, newGi] = await Promise.all([
       supaGetAppData("performance_records", records),
       supaGetAppData("pm_records", pmRecords),
       supaGetAppData("daily_perf_records", dailyPerfRecords),
@@ -1015,6 +1029,7 @@ async function checkForUpdates(){
       supaGetAppData("checkinout_decisions", checkInOutDecisions),
       supaGetAppData("weights", weights),
       supaGetMessages(),
+      supaGetAppData("general_info", generalInfo),
     ]);
     const changed =
       JSON.stringify(newRecords) !== JSON.stringify(records) ||
@@ -1025,11 +1040,12 @@ async function checkForUpdates(){
       JSON.stringify(newAttCases) !== JSON.stringify(attendanceCaseDecisions) ||
       JSON.stringify(newCio) !== JSON.stringify(checkInOutDecisions) ||
       JSON.stringify(newWeights) !== JSON.stringify(weights) ||
-      JSON.stringify(newMessages) !== JSON.stringify(messages);
+      JSON.stringify(newMessages) !== JSON.stringify(messages) ||
+      JSON.stringify(newGi) !== JSON.stringify(generalInfo);
     if(changed){
       records = newRecords; pmRecords = newPmRecords; dailyPerfRecords = newDailyPerf; pendingTasks = newTasks;
       switchRecords = newSwitch; attendanceCaseDecisions = newAttCases; checkInOutDecisions = newCio;
-      weights = newWeights; messages = newMessages;
+      weights = newWeights; messages = newMessages; generalInfo = newGi;
       refreshCurrentView();
       flashUpdateNotice();
     }
@@ -1114,6 +1130,7 @@ const EMP_MARKETING_SUBGROUP_IDS = EMP_MARKETING_SUBGROUP_DEFS.map(t=>t.id);
 const SUPPORT_SUBGROUP_DEFS = [
   {id:"pm", label:"PM"},
   {id:"collection", label:"جمع‌آوری"},
+  {id:"generalInfo", label:"اطلاعات کلی"},
 ];
 const SUPPORT_SUBGROUP_IDS = SUPPORT_SUBGROUP_DEFS.map(t=>t.id);
 const ASSISTANT_SUBGROUP_DEFS = [
@@ -1141,9 +1158,7 @@ function buildTabs(){
         {id:"messages", label:"پیام‌ها"},
       ]},
     ];
-    if(currentUser.canUpload){
-      groups.push({label:"آپلود اکسل", singleId:"upload", items:[{id:"upload", label:"آپلود اکسل"}]});
-    }
+    groups.push({label:"آپلود اکسل", singleId:"upload", items:[{id:"upload", label:"آپلود اکسل"}]});
     groups.push({label:"شاخص‌ رتبه‌بندی", singleId:"weights", items:[
       {id:"weights", label:"شاخص‌ رتبه‌بندی"},
     ]});
@@ -1203,6 +1218,7 @@ function renderSubtabsBar(activeId){
       {label:"بازاریابی", active: inMarketing, action: ()=> switchTab(mktLast)},
       {label:"PM", active: activeId==="pm", action: ()=> switchTab("pm")},
       {label:"جمع‌آوری", active: activeId==="collection", action: ()=> switchTab("collection")},
+      {label:"اطلاعات کلی", active: activeId==="generalInfo", action: ()=> switchTab("generalInfo")},
     ];
   }else if(inAssistant){
     chips = ASSISTANT_SUBGROUP_DEFS.map(t=>({label:t.label, active:t.id===activeId, action:()=>switchTab(t.id)}));
@@ -1240,7 +1256,7 @@ function renderSubtabsBar(activeId){
 
 function switchTab(id){
   if(["regions","banks","sectors","weights"].includes(id) && currentUser.role!=="manager") id = "mydashboard";
-  if(id==="upload" && !(currentUser.role==="manager" && currentUser.canUpload)) id = "mydashboard";
+  if(id==="upload" && currentUser.role!=="manager") id = "mydashboard";
   if(MARKETING_SUBGROUP_IDS.includes(id)) subgroupLastTab.marketing = id;
   if(EMP_MARKETING_SUBGROUP_IDS.includes(id)) subgroupLastTab.empMarketing = id;
   if(SUPPORT_SUBGROUP_IDS.includes(id)){ subgroupLastTab.support = id; subgroupLastTab.empProcess = id; }
@@ -1275,6 +1291,7 @@ function switchTab(id){
   if(id==="messages") renderMessagesView();
   if(id==="assistant") renderAssistantView();
   if(id==="assistantDaily") renderAssistantDailyView();
+  if(id==="generalInfo") renderGeneralInfoView();
   if(id==="prediction") renderPredictionView();
   if(id==="pm") renderPmView();
   if(id==="dailyperf") renderDailyPerfView();
@@ -1486,7 +1503,8 @@ function chartBars(containerId, items, opts={}){
     </div>`;
   }).join("");
 }
-function chartPie(containerId, items){
+function chartPie(containerId, items, opts={}){
+  const _fmt = opts.fmt || fmtNum, _pd = opts.pctDigits===undefined ? 1 : opts.pctDigits;
   const el = document.getElementById(containerId);
   if(!el) return;
   if(!items || items.length===0){ el.innerHTML = `<div class="empty-state" style="padding:20px;">داده‌ای برای نمایش نیست.</div>`; return; }
@@ -1506,8 +1524,8 @@ function chartPie(containerId, items){
           return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12.5px;">
             <span style="width:12px;height:12px;border-radius:3px;background:${color};flex:none;"></span>
             <span style="flex:1;">${it.label}</span>
-            <strong>${((it.value/total)*100).toFixed(1)}٪</strong>
-            <span style="color:var(--muted);font-size:11.5px;">(${fmtNum(it.value)})</span>
+            <strong>${((it.value/total)*100).toFixed(_pd)}٪</strong>
+            <span style="color:var(--muted);font-size:11.5px;">(${_fmt(it.value)})</span>
           </div>`;
         }).join("")}
       </div>
@@ -2190,7 +2208,7 @@ let regionsSubTab = "marketing";
 function renderRegionsSubTabs(){
   const h = document.getElementById("regionsSubTabs");
   h.innerHTML = "";
-  [["marketing","بازاریابی"],["pm","PM"],["collection","جمع‌آوری"]].forEach(([k,l])=>{
+  [["marketing","بازاریابی"],["pm","PM"],["collection","جمع‌آوری"],["general","اطلاعات کلی"]].forEach(([k,l])=>{
     const b = document.createElement("button");
     b.className = "tab-pill" + (regionsSubTab===k?" active":"");
     b.textContent = l;
@@ -2200,9 +2218,11 @@ function renderRegionsSubTabs(){
   document.getElementById("regionsGroupMarketing").style.display = regionsSubTab==="marketing" ? "" : "none";
   document.getElementById("regionsGroupPm").style.display = regionsSubTab==="pm" ? "" : "none";
   document.getElementById("regionsGroupCollection").style.display = regionsSubTab==="collection" ? "" : "none";
+  document.getElementById("regionsGroupGeneral").style.display = regionsSubTab==="general" ? "" : "none";
 }
 function renderRegionsView(){
   renderRegionsSubTabs();
+  if(regionsSubTab==="general") giRenderRegions();
   buildFilterBar("regionsFiltersHolder", "regions", {excludeKeys:["employees","banks","sectors","channels"]});
   const filtered = applyFilters(records, "regions");
   const ranking = computeRegionRanking(filtered);
@@ -2611,6 +2631,8 @@ function adBuildCells(emp, dates){
       const cell = {date:d, jy:p.jy, jm:p.jm, jd:p.jd, dow, shift:sh, n:list.length, target:AD_TARGET[sh],
         present:list.length>0, first:null, last:null, gapsOver:0, maxGap:0, overMin:0, startDelay:0, endEarly:0, lateStart:false, earlyEnd:false};
       cell.met = cell.n >= cell.target;
+      const cioDec = getCioDecision(emp, d, sh);
+      cell.leave = !cell.present && !!cioDec && cioDec.decision==="مرخصی"; // approved leave: excluded from averages
       if(list.length){
         cell.first = list[0].timeMinutes; cell.last = list[list.length-1].timeMinutes;
         for(let i=0;i<list.length-1;i++){
@@ -2685,6 +2707,8 @@ function adCompute(){
   let cells = adBuildCells(emp, dates);
   if(adState.weekdays.size) cells = cells.filter(c=>adState.weekdays.has(c.dow));
   if(adState.shift!=="all") cells = cells.filter(c=>c.shift===adState.shift);
+  const leaveCells = cells.filter(c=>c.leave);
+  cells = cells.filter(c=>!c.leave);
   const groups = [];
   AD_DOW_ORDER.forEach(dow=>{
     ["morning","evening"].forEach(sh=>{
@@ -2692,7 +2716,7 @@ function adCompute(){
       if(gc.length) groups.push(adAggregate(gc, dow, sh));
     });
   });
-  return {emp, months:Array.from(months), dates, cells, groups, monthKeys};
+  return {emp, months:Array.from(months), dates, cells, groups, monthKeys, leaveCells};
 }
 
 // ---- Repeated terminals: same terminal processed again on another day ----
@@ -2767,6 +2791,195 @@ function adRenderRepeat(content){
     </div>`;
 }
 
+/* ================= GENERAL INFO (اطلاعات کلی) =================
+   Manual monthly numbers per employee: transactions count/amount, devices, inactive devices.
+   Stored in Supabase key "general_info". All displayed numbers are rounded (no decimals). */
+const GI_METRICS = [
+  {key:"dev",  label:"تعداد کل دستگاه",  get:e=>e.dev},
+  {key:"amt",  label:"مبلغ کل تراکنش",    get:e=>e.amt},
+  {key:"tx",   label:"تعداد کل تراکنش",   get:e=>e.tx},
+  {key:"tp",   label:"TP (تراکنش ÷ دستگاه)", get:e=>e.dev ? e.tx/e.dev : 0},
+  {key:"ap",   label:"AP (مبلغ ÷ دستگاه)",   get:e=>e.dev ? e.amt/e.dev : 0},
+  {key:"at",   label:"AT (مبلغ ÷ تراکنش)",   get:e=>e.tx ? e.amt/e.tx : 0},
+  {key:"inact",label:"غیرفعال",           get:e=>e.inact},
+];
+const giF0 = v => Math.round(Number(v)||0).toLocaleString("fa-IR");
+const giP0 = v => giF0(v)+"٪";
+let giState = {months:new Set(), emps:new Set()};
+let giRegState = {months:new Set()};
+let giTableMetric = {gi:"tp", reg:"tp"};
+let giEntry = {emp:"", jy:0, jm:0};
+
+function giMonthKeys(){
+  return Array.from(new Set(generalInfo.map(r=>r.month))).sort((a,b)=>b.localeCompare(a));
+}
+function giEffectiveMonths(stateSet){
+  const keys = giMonthKeys();
+  const sel = Array.from(stateSet).filter(k=>keys.includes(k));
+  return new Set(sel.length ? sel : keys.slice(0,1));
+}
+function giPill(text, active, fn){ const b=document.createElement("button"); b.className="tab-pill"+(active?" active":""); b.textContent=text; b.onclick=fn; return b; }
+function giFilterRow(holder, label, nodes){
+  const row = document.createElement("div"); row.style.marginBottom="12px";
+  row.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">${label}</div>`;
+  const w = document.createElement("div"); w.style.cssText="display:flex;flex-wrap:wrap;gap:6px;";
+  nodes.forEach(n=>w.appendChild(n)); row.appendChild(w); holder.appendChild(row);
+}
+function giMonthPills(holder, stateObj, rerender){
+  const keys = giMonthKeys();
+  const eff = giEffectiveMonths(stateObj.months);
+  giFilterRow(holder, "ماه (چندانتخابی)", keys.map(k=> giPill(adMonthLabel(k), eff.has(k), ()=>{
+    const cur = new Set(eff); if(cur.has(k)) cur.delete(k); else cur.add(k);
+    stateObj.months = cur; rerender();
+  })));
+}
+// group records into entities [{name,tx,amt,dev,inact}]
+function giEntities(recs, by){
+  const map = {};
+  recs.forEach(r=>{
+    const name = by==="region" ? regionOfEmployee(r.employee) : r.employee;
+    if(by==="region" && name==="نامشخص") return;
+    const e = map[name] || (map[name] = {name, tx:0, amt:0, dev:0, inact:0});
+    e.tx += Number(r.txCount)||0; e.amt += Number(r.txAmount)||0;
+    e.dev += Number(r.deviceCount)||0; e.inact += Number(r.inactiveCount)||0;
+  });
+  return Object.values(map);
+}
+
+function giTableHtml(ents, key, entityLabel){
+  const def = GI_METRICS.find(m=>m.key===key);
+  const sum = ents.reduce((s,e)=>s+def.get(e),0) || 1;
+  let rows = ents.map(e=>({e, v:def.get(e), pct: e.dev ? e.inact/e.dev*100 : 0}));
+  rows.sort((a,b)=> key==="inact" ? (a.pct-b.pct) : (b.v-a.v));
+  const badge = i => `<span class="rank-badge ${i===0?"gold":i===1?"silver":i===2?"bronze":""}">${fmtNum(i+1)}</span>`;
+  if(key==="inact"){
+    return `<h4 style="margin:6px 0;color:var(--navy);">رتبه‌بندی غیرفعال (کمترین درصد غیرفعال بهترین است)</h4>
+    <table><thead><tr><th>رتبه</th><th>${entityLabel}</th><th>تعداد غیرفعال</th><th>درصد غیرفعال از دستگاه</th><th>سهم از کل غیرفعال‌ها</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr><td>${badge(i)}</td><td>${r.e.name}</td><td>${giF0(r.e.inact)}</td><td>${giP0(r.pct)}</td><td>${giP0(r.v/sum*100)}</td></tr>`).join("")}</tbody></table>`;
+  }
+  return `<h4 style="margin:6px 0;color:var(--navy);">رتبه‌بندی ${def.label} (بر اساس سهم درصدی)</h4>
+    <table><thead><tr><th>رتبه</th><th>${entityLabel}</th><th>مقدار</th><th>سهم از کل</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr><td>${badge(i)}</td><td>${r.e.name}</td><td>${giF0(r.v)}</td><td>${giP0(r.v/sum*100)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function giRenderDashboard(containerId, ents, uid, entityLabel){
+  const el = document.getElementById(containerId);
+  if(!ents.length){ el.innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">📭</div>برای ماه/پشتیبان انتخاب‌شده هنوز اطلاعات کلی وارد نشده است.</div></div>`; return; }
+  const T = ents.reduce((a,e)=>({tx:a.tx+e.tx, amt:a.amt+e.amt, dev:a.dev+e.dev, inact:a.inact+e.inact}),{tx:0,amt:0,dev:0,inact:0});
+  const tp = T.dev ? T.tx/T.dev : 0, ap = T.dev ? T.amt/T.dev : 0, at = T.tx ? T.amt/T.tx : 0, ip = T.dev ? T.inact/T.dev*100 : 0;
+  const metricOpts = [["tp","TP"],["ap","AP"],["at","AT"],["inact","غیرفعال"],["all","همه"]];
+  const sel = giTableMetric[uid] || "tp";
+  const keys = sel==="all" ? ["tp","ap","at","inact"] : [sel];
+  const chartCard = (m, sub)=>`<div class="section-card"><h3>${m.label}${sub||""}</h3>
+      <div class="grid-2" style="grid-template-columns:1fr 1fr;">
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${m.key==="inact"?"سهم درصدی از کل غیرفعال‌ها":"سهم درصدی از کل"}</div><div id="${uid}_pie_${m.key}"></div></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:6px;">مقدار عددی</div><div id="${uid}_bar_${m.key}"></div></div>
+      </div></div>`;
+  const byKey = k=>GI_METRICS.find(m=>m.key===k);
+  el.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="label">تعداد کل تراکنش</div><div class="value">${giF0(T.tx)}</div></div>
+      <div class="kpi-card"><div class="label">مبلغ کل تراکنش</div><div class="value" style="font-size:18px;">${giF0(T.amt)}</div></div>
+      <div class="kpi-card"><div class="label">تعداد کل دستگاه</div><div class="value">${giF0(T.dev)}</div></div>
+      <div class="kpi-card"><div class="label">TP (تراکنش ÷ دستگاه)</div><div class="value">${giF0(tp)}</div></div>
+      <div class="kpi-card"><div class="label">AP (مبلغ ÷ دستگاه)</div><div class="value" style="font-size:18px;">${giF0(ap)}</div></div>
+      <div class="kpi-card"><div class="label">AT (مبلغ ÷ تراکنش)</div><div class="value" style="font-size:18px;">${giF0(at)}</div></div>
+      <div class="kpi-card"><div class="label">غیرفعال</div><div class="value">${giF0(T.inact)}</div><div class="sub">${giP0(ip)} از تعداد دستگاه</div></div>
+    </div>
+    <div class="section-card"><h3>جدول رتبه‌بندی</h3>
+      <div class="tab-pill-group" id="${uid}_tablePills"></div>
+      ${keys.map(k=>giTableHtml(ents,k,entityLabel)).join('<div style="height:14px;"></div>')}
+    </div>
+    ${["dev","amt","tx"].map(k=>chartCard(byKey(k))).join("")}
+    ${["tp","ap","at","inact"].map(k=>chartCard(byKey(k))).join("")}`;
+  const pills = document.getElementById(uid+"_tablePills");
+  metricOpts.forEach(([k,l])=> pills.appendChild(giPill(l, sel===k, ()=>{ giTableMetric[uid]=k; giRenderDashboard(containerId, ents, uid, entityLabel); })));
+  GI_METRICS.forEach(m=>{
+    const items = ents.map(e=>({label:e.name, value:m.get(e)})).sort((a,b)=>b.value-a.value);
+    chartPie(uid+"_pie_"+m.key, items, {fmt:giF0, pctDigits:0});
+    chartBars(uid+"_bar_"+m.key, items, {formatter:giF0, color:"#4472a8"});
+  });
+}
+
+function renderGeneralInfoView(){
+  const allowed = allowedDailyPerfEmployees();
+  const holder = document.getElementById("giFilters");
+  holder.innerHTML = "";
+  if(giMonthKeys().length===0){
+    holder.innerHTML = "";
+    document.getElementById("giBody").innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">📭</div>هنوز اطلاعات کلی‌ای وارد نشده است. مدیر از تب «آپلود اکسل» می‌تواند وارد کند.</div></div>`;
+    return;
+  }
+  const rerender = ()=>renderGeneralInfoView();
+  giMonthPills(holder, giState, rerender);
+  const present = allowed.filter(n=>generalInfo.some(r=>r.employee===n));
+  if(currentUser.role==="manager" && present.length>1){
+    giFilterRow(holder, "پشتیبان (چندانتخابی؛ بدون انتخاب = همه)", [giPill("همه", giState.emps.size===0, ()=>{ giState.emps=new Set(); rerender(); }), ...present.map(n=>giPill(n, giState.emps.has(n), ()=>{
+      const cur=new Set(giState.emps); if(cur.has(n)) cur.delete(n); else cur.add(n); giState.emps=cur; rerender(); }))]);
+  }
+  const months = giEffectiveMonths(giState.months);
+  const recs = generalInfo.filter(r=>months.has(r.month) && allowed.includes(r.employee) && (giState.emps.size===0 || giState.emps.has(r.employee)));
+  giRenderDashboard("giBody", giEntities(recs,"employee"), "gi", "پشتیبان");
+}
+function giRenderRegions(){
+  const holder = document.getElementById("giRegFilters");
+  holder.innerHTML = "";
+  if(giMonthKeys().length===0){ document.getElementById("giRegBody").innerHTML = `<div class="section-card"><div class="empty-state">هنوز اطلاعات کلی‌ای وارد نشده است.</div></div>`; return; }
+  giMonthPills(holder, giRegState, giRenderRegions);
+  const months = giEffectiveMonths(giRegState.months);
+  const recs = generalInfo.filter(r=>months.has(r.month));
+  giRenderDashboard("giRegBody", giEntities(recs,"region"), "reg", "ناحیه");
+}
+
+// ---- manager data entry (inside the upload tab) ----
+function renderGiEntry(){
+  const holder = document.getElementById("giEntryHolder");
+  const allowed = allowedDailyPerfEmployees();
+  const t = todayShamsi();
+  if(!giEntry.jy){ giEntry.jy = t.jy; giEntry.jm = t.jm; }
+  if(!allowed.includes(giEntry.emp)) giEntry.emp = allowed[0] || "";
+  const key = giEntry.jy+"-"+String(giEntry.jm).padStart(2,"0");
+  const cur = generalInfo.find(r=>r.employee===giEntry.emp && r.month===key) || {};
+  const monthRows = generalInfo.filter(r=>r.month===key && allowed.includes(r.employee));
+  holder.innerHTML = `
+    <div class="section-card">
+      <h3>اطلاعات کلی (ورود دستی)</h3>
+      <p class="small-note">پشتیبان و ماه را انتخاب کنید و مقادیر را وارد کنید. اگر قبلاً برای همین پشتیبان و ماه ثبت شده باشد، مقادیر قبلی نمایش داده و با ذخیره جایگزین می‌شود.</p>
+      <div class="form-grid">
+        <div><label>پشتیبان</label><select id="giEmp">${allowed.map(n=>`<option ${n===giEntry.emp?"selected":""}>${n}</option>`).join("")}</select></div>
+        <div><label>ماه</label><select id="giMonth">${JALALI_MONTH_NAMES.map((m,i)=>`<option value="${i+1}" ${i+1===giEntry.jm?"selected":""}>${m}</option>`).join("")}</select></div>
+        <div><label>سال</label><select id="giYear">${[t.jy-1,t.jy,t.jy+1].map(y=>`<option value="${y}" ${y===giEntry.jy?"selected":""}>${y}</option>`).join("")}</select></div>
+        <div></div>
+        <div><label>تعداد تراکنش</label><input type="number" min="0" step="1" id="giTx" value="${cur.txCount!==undefined?cur.txCount:""}"></div>
+        <div><label>مبلغ تراکنش</label><input type="number" min="0" step="1" id="giAmt" value="${cur.txAmount!==undefined?cur.txAmount:""}"></div>
+        <div><label>تعداد دستگاه</label><input type="number" min="0" step="1" id="giDev" value="${cur.deviceCount!==undefined?cur.deviceCount:""}"></div>
+        <div><label>تعداد غیرفعال</label><input type="number" min="0" step="1" id="giInact" value="${cur.inactiveCount!==undefined?cur.inactiveCount:""}"></div>
+      </div>
+      <button class="btn-sm" style="margin-top:12px;" onclick="saveGeneralInfo()">ذخیره</button>
+      <div id="giMsg" class="small-note"></div>
+      ${monthRows.length ? `<h4 style="margin:14px 0 6px;color:var(--navy);">ثبت‌شده‌ها در ${adMonthLabel(key)}</h4>
+      <table><thead><tr><th>پشتیبان</th><th>تعداد تراکنش</th><th>مبلغ تراکنش</th><th>تعداد دستگاه</th><th>غیرفعال</th></tr></thead><tbody>
+      ${monthRows.map(r=>`<tr><td>${r.employee}</td><td>${giF0(r.txCount)}</td><td>${giF0(r.txAmount)}</td><td>${giF0(r.deviceCount)}</td><td>${giF0(r.inactiveCount)}</td></tr>`).join("")}</tbody></table>` : ""}
+    </div>`;
+  const rr = ()=>{ giEntry.emp=document.getElementById("giEmp").value; giEntry.jm=Number(document.getElementById("giMonth").value); giEntry.jy=Number(document.getElementById("giYear").value); renderGiEntry(); };
+  ["giEmp","giMonth","giYear"].forEach(id=>{ document.getElementById(id).onchange = rr; });
+}
+async function saveGeneralInfo(){
+  if(currentUser.role!=="manager") return;
+  const emp = document.getElementById("giEmp").value;
+  if(!allowedDailyPerfEmployees().includes(emp)) return;
+  const jy = Number(document.getElementById("giYear").value), jm = Number(document.getElementById("giMonth").value);
+  const month = jy+"-"+String(jm).padStart(2,"0");
+  const num = id => Math.max(0, Math.round(Number(document.getElementById(id).value)||0));
+  const rec = {employee:emp, month, txCount:num("giTx"), txAmount:num("giAmt"), deviceCount:num("giDev"), inactiveCount:num("giInact"), updatedBy:currentUser.name};
+  const msg = document.getElementById("giMsg");
+  if(rec.inactiveCount > rec.deviceCount){ msg.innerHTML = `<span style="color:var(--warn);">تعداد غیرفعال نمی‌تواند از تعداد دستگاه بیشتر باشد.</span>`; return; }
+  const list = generalInfo.filter(r=>!(r.employee===emp && r.month===month)).concat([rec]);
+  const ok = await supaSetAppData("general_info", list);
+  if(ok){ generalInfo = list; renderGiEntry(); document.getElementById("giMsg").innerHTML = `<span style="color:var(--good);">✔ اطلاعات ${emp} برای ${adMonthLabel(month)} ذخیره شد.</span>`; }
+  else msg.innerHTML = `<span style="color:var(--warn);">⚠ ذخیره ناموفق بود؛ اتصال به پایگاه‌داده را بررسی کنید.</span>`;
+}
+
 function renderAssistantDailyView(){
   const view = document.getElementById("view-assistantDaily");
   const isMgr = currentUser.role==="manager";
@@ -2833,7 +3046,7 @@ function renderAssistantDailyView(){
   }
   if(adState.tab==="repeat"){ adRenderRepeat(content); return; }
   const data = adCompute();
-  if(data.groups.length===0){
+  if(data.groups.length===0 && data.leaveCells.length===0){
     content.innerHTML = `<div class="section-card"><div class="empty-state">برای فیلتر انتخاب‌شده داده‌ای وجود ندارد (روز جمعه تعطیل است و فقط روزهایی که فایلشان آپلود شده بررسی می‌شوند).</div></div>`;
     return;
   }
@@ -2914,7 +3127,7 @@ function adRenderAnalysis(content, data){
       <ul style="margin:0;padding-right:20px;font-size:13px;line-height:2;">${s.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("")
     : `<div style="color:var(--good);font-weight:700;">✔ در بازه‌ی انتخاب‌شده مورد قابل‌توجهی دیده نشد.</div>`;
   content.innerHTML = `
-    <div class="notice">تحلیل ${data.emp} — ${fmtNum(data.dates.length)} روز داده در ماه(های) ${data.months.sort().map(adMonthLabel).join("، ")}. «کار انجام‌شده» = تعداد پایانه‌ی یکتا در هر شیفت (هر پایانه یک کار، حتی اگر چند فرآیند داشته باشد). حداقل: صبح ${fmtNum(AD_TARGET.morning)}، عصر ${fmtNum(AD_TARGET.evening)}.</div>
+    <div class="notice">تحلیل ${data.emp} — ${fmtNum(data.dates.length)} روز داده در ماه(های) ${data.months.sort().map(adMonthLabel).join("، ")}. «کار انجام‌شده» = تعداد پایانه‌ی یکتا در هر شیفت (هر پایانه یک کار، حتی اگر چند فرآیند داشته باشد). حداقل: صبح ${fmtNum(AD_TARGET.morning)}، عصر ${fmtNum(AD_TARGET.evening)}.${data.leaveCells.length ? ` ${fmtNum(data.leaveCells.length)} شیفت مرخصی (${data.leaveCells.map(c=>formatShamsi(c.jy,c.jm,c.jd)+" "+AD_SHIFT_LABEL[c.shift]).join("، ")}) در آمار حساب نشده است.` : ""}</div>
     ${cards}
     <div class="section-card"><h3>جمع‌بندی نهایی</h3>${finHtml}
       ${fin.good.length ? `<div style="margin-top:6px;font-size:12.5px;color:var(--good);">بدون مشکل: ${fin.good.join("، ")}</div>` : ""}
@@ -2930,6 +3143,7 @@ function adRenderReport(content, data){
     <div class="kpi-grid">
       <div class="kpi-card"><div class="label">شیفت‌های بررسی‌شده</div><div class="value">${fmtNum(cells.length)}</div></div>
       <div class="kpi-card"><div class="label">شیفت‌های دارای عملکرد</div><div class="value">${fmtNum(presentCells.length)}</div><div class="sub">${fmtNum(cells.length-presentCells.length)} شیفت بدون عملکرد</div></div>
+      <div class="kpi-card"><div class="label">شیفت‌های مرخصی</div><div class="value">${fmtNum(data.leaveCells.length)}</div><div class="sub">${data.leaveCells.length ? "در میانگین‌ها حساب نشده‌اند" : "مرخصی ثبت نشده"}</div></div>
       <div class="kpi-card"><div class="label">رسیدن به حداقل</div><div class="value">${adF1(cells.length?metCells/cells.length*100:0)}٪</div><div class="sub">${fmtNum(metCells)} از ${fmtNum(cells.length)} شیفت</div></div>
       <div class="kpi-card"><div class="label">میانگین کار در شیفت دارای عملکرد</div><div class="value">${adF1(adMean(presentCells.map(c=>c.n)))}</div></div>
       <div class="kpi-card"><div class="label">جمع فاصله‌های بیش از ۳۰ دقیقه</div><div class="value">${fmtNum(presentCells.reduce((s,c)=>s+c.gapsOver,0))}</div></div>
@@ -3455,6 +3669,8 @@ function pickBestSheet(wb){
 }
 
 function renderUploadView(){
+  renderGiEntry();
+  document.getElementById("uploadExcelWrap").style.display = currentUser.canUpload ? "" : "none";
   // static view, nothing to compute until a file is chosen
 }
 async function handleFileSelect(evt){
