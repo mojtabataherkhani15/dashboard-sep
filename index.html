@@ -483,7 +483,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
     <div class="view" id="view-regions">
       <div class="tab-pill-group" id="regionsSubTabs"></div>
       <div id="regionsGroupGeneral" style="display:none;">
-        <div class="section-card"><h3>فیلتر ماه</h3><div id="giRegFilters"></div></div>
+        <div class="tab-pill-group" id="giRegTabs"></div>
+        <div class="section-card" id="giRegFilterCard"><h3>فیلتر ماه</h3><div id="giRegFilters"></div></div>
         <div id="giRegBody"></div>
       </div>
       <div id="regionsGroupMarketing">
@@ -626,7 +627,8 @@ tbody tr:hover{background:var(--navy-pale-2);}
     </div>
 
     <div class="view" id="view-generalInfo">
-      <div class="section-card"><h3>فیلترها</h3><div id="giFilters"></div></div>
+      <div class="tab-pill-group" id="giTabs"></div>
+      <div class="section-card" id="giFilterCard"><h3>فیلترها</h3><div id="giFilters"></div></div>
       <div id="giBody"></div>
     </div>
 
@@ -2901,10 +2903,94 @@ function giRenderDashboard(containerId, ents, uid, entityLabel){
   });
 }
 
+// ---- Trend (روند عملکرد) for general info: month-over-month, employees or regions ----
+const GI_TREND_METRICS = [...GI_METRICS, {key:"inactPct", label:"درصد غیرفعال", get:e=>e.dev ? e.inact/e.dev*100 : 0}];
+const GI_BAD_UP = ["inact","inactPct"]; // for these, going up is bad
+let giViewTab = "overview", giRegViewTab = "overview";
+let giTrend = {gi:{metric:"tx", sel:new Set()}, reg:{metric:"tx", sel:new Set()}};
+
+function giTrendSeries(by, name, metricKey, scopeRecs){
+  const def = GI_TREND_METRICS.find(m=>m.key===metricKey);
+  const months = Array.from(new Set(scopeRecs.map(r=>r.month))).sort();
+  const pts = [];
+  months.forEach(mk=>{
+    const rs = scopeRecs.filter(r=>r.month===mk && (by==="region" ? regionOfEmployee(r.employee)===name : r.employee===name));
+    if(!rs.length) return;
+    const e = giEntities(rs, by)[0];
+    if(e) pts.push({month:mk, value:def.get(e)});
+  });
+  return pts;
+}
+function giTrendVerdict(pts, bad){
+  if(pts.length<2) return {txt:"برای بررسی روند حداقل دو ماه داده لازم است", cls:"neutral"};
+  const last = pts[pts.length-1].value, prev = pts[pts.length-2].value;
+  const d = Math.round(last)-Math.round(prev);
+  if(d===0) return {txt:"نسبت به ماه قبل ثابت بوده", cls:"neutral"};
+  const up = d>0;
+  const good = bad ? !up : up;
+  return {txt: up ? "نسبت به ماه قبل صعودی بوده ▲" : "نسبت به ماه قبل نزولی بوده ▼", cls: good ? "good" : "warn"};
+}
+function giRenderTrend(containerId, uid, by, names, scopeRecs, entityLabel){
+  const el = document.getElementById(containerId);
+  const st = giTrend[uid];
+  if(!names.length){ el.innerHTML = `<div class="section-card"><div class="empty-state">داده‌ای برای نمایش روند نیست.</div></div>`; return; }
+  if(by==="region" && st.sel.size===0) names.forEach(n=>st.sel.add(n));
+  if(by!=="region" && st.sel.size===0) st.sel.add(names[0]);
+  const sel = names.filter(n=>st.sel.has(n));
+  const mdef = GI_TREND_METRICS.find(m=>m.key===st.metric);
+  const bad = GI_BAD_UP.includes(st.metric);
+  const allMonths = Array.from(new Set(scopeRecs.map(r=>r.month))).sort();
+  const palette = ["#1e3a5f","#c0392b","#2e7d5b","#c9a227","#7a5c96","#4472a8","#a5652f","#5c6b7a"];
+  el.innerHTML = `
+    <div class="section-card"><h3>فیلتر روند</h3>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">شاخص</div><div id="${uid}_tMetric" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">${entityLabel} (با کلیک روی هر مورد، روندش نمایش داده می‌شود)</div><div id="${uid}_tEnt" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+    <div class="section-card"><h3>نمودار روند ${mdef.label}</h3><div id="${uid}_tChart"></div>
+      <p class="small-note">ماهی که برای آن مورد ثبت نشده باشد در نمودار صفر نمایش داده می‌شود ولی در تحلیل حساب نمی‌شود.</p></div>
+    <div id="${uid}_tCards"></div>`;
+  const mh = document.getElementById(uid+"_tMetric"), eh = document.getElementById(uid+"_tEnt");
+  const again = ()=>giRenderTrend(containerId, uid, by, names, scopeRecs, entityLabel);
+  GI_TREND_METRICS.forEach(m=> mh.appendChild(giPill(m.label, st.metric===m.key, ()=>{ st.metric=m.key; again(); })));
+  names.forEach(n=> eh.appendChild(giPill(n, st.sel.has(n), ()=>{ if(st.sel.has(n)) st.sel.delete(n); else st.sel.add(n); again(); })));
+  const series = sel.map((n,i)=>{
+    const pts = giTrendSeries(by, n, st.metric, scopeRecs);
+    return {name:n, pts, color:palette[i%palette.length], values: allMonths.map(mk=>{ const p=pts.find(x=>x.month===mk); return p ? Math.round(p.value) : 0; })};
+  });
+  chartLine(uid+"_tChart", allMonths.map(mk=>PERSIAN_MONTHS[Number(mk.split("-")[1])-1]), series.map(s=>({name:s.name, values:s.values, color:s.color})), {height:280});
+  document.getElementById(uid+"_tCards").innerHTML = series.map(s=>{
+    const v = giTrendVerdict(s.pts, bad);
+    const first = s.pts[0], last = s.pts[s.pts.length-1];
+    const overall = s.pts.length>=2 ? (()=>{ const d=Math.round(last.value)-Math.round(first.value); return d===0?"در کل بازه ثابت بوده":(d>0?"در کل بازه صعودی بوده":"در کل بازه نزولی بوده"); })() : "";
+    return `<div class="section-card"><h3>${s.name} — ${mdef.label} <span class="pill ${v.cls}" style="margin-right:8px;">${v.txt}</span></h3>
+      ${overall ? `<p class="small-note" style="margin:0 0 8px;">${overall} (از ${adMonthLabel(first.month)} تا ${adMonthLabel(last.month)})</p>` : ""}
+      <table><thead><tr><th>ماه</th><th>مقدار</th><th>تغییر نسبت به ماه قبل</th><th>درصد تغییر</th><th>وضعیت</th></tr></thead><tbody>
+      ${s.pts.map((p,i)=>{
+        if(i===0) return `<tr><td>${adMonthLabel(p.month)}</td><td>${giF0(p.value)}</td><td>—</td><td>—</td><td>—</td></tr>`;
+        const pv = s.pts[i-1].value, d = Math.round(p.value)-Math.round(pv), pc = pv ? d/pv*100 : 0;
+        const up = d>0, good = bad ? !up : up;
+        const status = d===0 ? `<span class="pill neutral">ثابت</span>` : `<span class="pill ${good?"good":"warn"}">${up?"صعودی ▲":"نزولی ▼"}</span>`;
+        return `<tr><td>${adMonthLabel(p.month)}</td><td>${giF0(p.value)}</td><td>${d>0?"+":""}${giF0(d)}</td><td>${d>0?"+":""}${giP0(pc)}</td><td>${status}</td></tr>`;
+      }).join("")}</tbody></table></div>`;
+  }).join("");
+}
+function giTabsBar(holderId, current, setFn){
+  const h = document.getElementById(holderId); h.innerHTML = "";
+  [["overview","نمای کلی"],["trend","روند عملکرد"]].forEach(([k,l])=> h.appendChild(giPill(l, current===k, ()=>setFn(k))));
+}
+
 function renderGeneralInfoView(){
   const allowed = allowedDailyPerfEmployees();
   const holder = document.getElementById("giFilters");
   holder.innerHTML = "";
+  giTabsBar("giTabs", giViewTab, k=>{ giViewTab=k; renderGeneralInfoView(); });
+  if(giViewTab==="trend"){
+    document.getElementById("giFilterCard").style.display = "none";
+    const names = allowed.filter(n=>generalInfo.some(r=>r.employee===n));
+    giRenderTrend("giBody", "gi", "employee", names, generalInfo.filter(r=>allowed.includes(r.employee)), "پشتیبان");
+    return;
+  }
+  document.getElementById("giFilterCard").style.display = "";
   if(giMonthKeys().length===0){
     holder.innerHTML = "";
     document.getElementById("giBody").innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">📭</div>هنوز اطلاعات کلی‌ای وارد نشده است. مدیر از تب «آپلود اکسل» می‌تواند وارد کند.</div></div>`;
@@ -2924,6 +3010,14 @@ function renderGeneralInfoView(){
 function giRenderRegions(){
   const holder = document.getElementById("giRegFilters");
   holder.innerHTML = "";
+  giTabsBar("giRegTabs", giRegViewTab, k=>{ giRegViewTab=k; giRenderRegions(); });
+  if(giRegViewTab==="trend"){
+    document.getElementById("giRegFilterCard").style.display = "none";
+    const names = Array.from(new Set(generalInfo.map(r=>regionOfEmployee(r.employee)))).filter(n=>n!=="نامشخص").sort();
+    giRenderTrend("giRegBody", "reg", "region", names, generalInfo, "ناحیه");
+    return;
+  }
+  document.getElementById("giRegFilterCard").style.display = "";
   if(giMonthKeys().length===0){ document.getElementById("giRegBody").innerHTML = `<div class="section-card"><div class="empty-state">هنوز اطلاعات کلی‌ای وارد نشده است.</div></div>`; return; }
   giMonthPills(holder, giRegState, giRenderRegions);
   const months = giEffectiveMonths(giRegState.months);
