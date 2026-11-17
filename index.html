@@ -632,6 +632,11 @@ tbody tr:hover{background:var(--navy-pale-2);}
       <div id="giBody"></div>
     </div>
 
+    <div class="view" id="view-assistantRegion">
+      <div class="section-card"><h3>تحلیل منطقه</h3><div id="arFilters"></div></div>
+      <div id="arResult"></div>
+    </div>
+
     <!-- ---- SMART ASSISTANT: DAILY PERFORMANCE ---- -->
     <div class="view" id="view-assistantDaily">
       <div class="section-card"><h3>فیلترها</h3><div id="adFilters"></div></div>
@@ -1138,6 +1143,7 @@ const SUPPORT_SUBGROUP_IDS = SUPPORT_SUBGROUP_DEFS.map(t=>t.id);
 const ASSISTANT_SUBGROUP_DEFS = [
   {id:"assistant", label:"بازاریابی"},
   {id:"assistantDaily", label:"عملکرد روزانه"},
+  {id:"assistantRegion", label:"تحلیل منطقه"},
 ];
 const ASSISTANT_SUBGROUP_IDS = ASSISTANT_SUBGROUP_DEFS.map(t=>t.id);
 let subgroupLastTab = {marketing:"dashboard", support:"pm", empMarketing:"mydashboard", empProcess:"mydashboard", mgrAssistant:"assistant", empAssistant:"assistant"};
@@ -1223,7 +1229,7 @@ function renderSubtabsBar(activeId){
       {label:"اطلاعات کلی", active: activeId==="generalInfo", action: ()=> switchTab("generalInfo")},
     ];
   }else if(inAssistant){
-    chips = ASSISTANT_SUBGROUP_DEFS.map(t=>({label:t.label, active:t.id===activeId, action:()=>switchTab(t.id)}));
+    chips = ASSISTANT_SUBGROUP_DEFS.filter(t=>!t.managerOnly || isMgr).map(t=>({label:t.label, active:t.id===activeId, action:()=>switchTab(t.id)}));
   }
 
   bar1.innerHTML = "";
@@ -1293,6 +1299,7 @@ function switchTab(id){
   if(id==="messages") renderMessagesView();
   if(id==="assistant") renderAssistantView();
   if(id==="assistantDaily") renderAssistantDailyView();
+  if(id==="assistantRegion") renderAssistantRegionView();
   if(id==="generalInfo") renderGeneralInfoView();
   if(id==="prediction") renderPredictionView();
   if(id==="pm") renderPmView();
@@ -3072,6 +3079,202 @@ async function saveGeneralInfo(){
   const ok = await supaSetAppData("general_info", list);
   if(ok){ generalInfo = list; renderGiEntry(); document.getElementById("giMsg").innerHTML = `<span style="color:var(--good);">✔ اطلاعات ${emp} برای ${adMonthLabel(month)} ذخیره شد.</span>`; }
   else msg.innerHTML = `<span style="color:var(--warn);">⚠ ذخیره ناموفق بود؛ اتصال به پایگاه‌داده را بررسی کنید.</span>`;
+}
+
+/* ================= ASSISTANT — REGION ANALYSIS (تحلیل منطقه) =================
+   Pure data-driven: every sentence is generated from the current numbers (general info,
+   PM, collection, marketing) at the moment the user presses «اجرای تحلیل». Nothing is pre-assumed. */
+let arState = {emps:new Set(), ran:false};
+const AR_GOOD = 80, AR_WEAK = 50; // PM / collection completion % thresholds
+const ar0 = v => Math.round(Number(v)||0).toLocaleString("fa-IR");
+
+function arScopeEmployees(){
+  const allowed = allowedDailyPerfEmployees();
+  return arState.emps.size ? allowed.filter(n=>arState.emps.has(n)) : allowed;
+}
+function arProcessStats(list, emp){
+  const mine = list.filter(r=>r.employee===emp);
+  const total = mine.length;
+  const success = mine.filter(r=>classifyPmStatus(r.status)==="موفق").length;
+  return {total, success, left: total-success, pct: total ? success/total*100 : null};
+}
+function arCompute(emps, avgEmps){
+  avgEmps = avgEmps || emps;
+  const out = {emps:[], regions:{}};
+  // ---- general info: latest + previous registered month within scope ----
+  const giScope = generalInfo.filter(r=>emps.includes(r.employee) || avgEmps.includes(r.employee));
+  const giMonths = Array.from(new Set(giScope.map(r=>r.month))).sort();
+  const latest = giMonths[giMonths.length-1] || null, prevM = giMonths.length>1 ? giMonths[giMonths.length-2] : null;
+  out.latestMonth = latest; out.prevMonth = prevM;
+  const giOf = (emp, mk)=>{ const rs = giScope.filter(r=>r.employee===emp && r.month===mk); return rs.length ? giEntities(rs,"employee")[0] : null; };
+  // ---- marketing ----
+  const inst = installedOnly(records).filter(r=>emps.includes(r.employee));
+  const mc = Math.max(1, new Set(inst.map(r=>r.installMonth).filter(Boolean)).size);
+  const ma = Math.max(1, new Set(inst.filter(r=>r.amount).map(r=>r.activityMonth)).size);
+  const mt = Math.max(1, new Set(inst.filter(r=>r.transactions).map(r=>r.activityMonth)).size);
+  const T = REGION_TARGET_PER_EMP;
+  const pmList = pmRecords.filter(isPmOrder), colList = pmRecords.filter(isCollectionOrder);
+
+  emps.forEach(emp=>{
+    const mine = inst.filter(r=>r.employee===emp);
+    const count = new Set(mine.map(r=>r.store)).size;
+    const amount = mine.reduce((s,r)=>s+(Number(r.amount)||0),0), tx = mine.reduce((s,r)=>s+(Number(r.transactions)||0),0);
+    const ach = {count: count/(T.count*mc)*100, amount: amount/(T.amount*ma)*100, tx: tx/(T.transactions*mt)*100};
+    const mktScore = (Math.min(100,ach.count)+Math.min(100,ach.amount)+Math.min(100,ach.tx))/3;
+    out.emps.push({name:emp, region:regionOfEmployee(emp), mkt:{count,amount,tx,ach,score:mktScore, has:mine.length>0},
+      pm:arProcessStats(pmList,emp), col:arProcessStats(colList,emp), gi:giOf(emp,latest), giPrev:prevM?giOf(emp,prevM):null});
+  });
+  // ---- group averages (for relative strengths / weaknesses) ----
+  const withGi = avgEmps.map(n=>giOf(n,latest)).filter(g=>g && g.dev);
+  const sum = k=>withGi.reduce((s,g)=>s+g[k],0);
+  out.avg = {
+    tp: sum("dev") ? sum("tx")/sum("dev") : 0, ap: sum("dev") ? sum("amt")/sum("dev") : 0,
+    at: sum("tx") ? sum("amt")/sum("tx") : 0, inactPct: sum("dev") ? sum("inact")/sum("dev")*100 : 0,
+    dev:sum("dev"), tx:sum("tx"), amt:sum("amt"), inact:sum("inact"),
+  };
+  const tot = (key)=>{ const t = out.emps.reduce((s,e)=>s+e[key].total,0), sc = out.emps.reduce((s,e)=>s+e[key].success,0); return {total:t, success:sc, pct:t?sc/t*100:null}; };
+  out.pm = tot("pm"); out.col = tot("col");
+  const mkts = out.emps.filter(e=>e.mkt.has);
+  out.mktScore = mkts.length ? mkts.reduce((s,e)=>s+e.mkt.score,0)/mkts.length : null;
+  out.giScore = out.avg.dev ? 100-out.avg.inactPct : null;
+  out.mktMonths = {mc,ma,mt};
+  return out;
+}
+
+function arEmployeeInsights(e, avg){
+  const strong = [], weak = [], rec = [];
+  const g = e.gi, gp = e.giPrev;
+  // general info
+  if(g && g.dev){
+    const tp = g.tx/g.dev, ap = g.amt/g.dev, at = g.tx ? g.amt/g.tx : 0, ip = g.inact/g.dev*100;
+    const cmp = (name, v, a, fmt)=>{
+      if(!a) return;
+      if(v >= a*1.1) strong.push(`${name} بالاتر از میانگین گروه است (${fmt(v)} در برابر ${fmt(a)})`);
+      else if(v <= a*0.8){ weak.push(`${name} پایین‌تر از میانگین گروه است (${fmt(v)} در برابر ${fmt(a)})`); }
+    };
+    cmp("TP (تراکنش به ازای هر دستگاه)", tp, avg.tp, ar0);
+    cmp("AP (مبلغ به ازای هر دستگاه)", ap, avg.ap, ar0);
+    cmp("AT (میانگین مبلغ هر تراکنش)", at, avg.at, ar0);
+    if(ip > Math.max(5, avg.inactPct*1.25)) { weak.push(`درصد دستگاه غیرفعال ${ar0(ip)}٪ است (میانگین گروه ${ar0(avg.inactPct)}٪) — ${ar0(g.inact)} از ${ar0(g.dev)} دستگاه`); rec.push("برنامه‌ی مشخص برای بازدید و فعال‌سازی دستگاه‌های غیرفعال با اولویت دستگاه‌های پرپتانسیل"); }
+    else if(ip < avg.inactPct*0.75 || ip===0) strong.push(`درصد غیرفعال کم است (${ar0(ip)}٪ در برابر میانگین ${ar0(avg.inactPct)}٪)`);
+    if(tp <= avg.tp*0.8 && ip <= avg.inactPct) rec.push("دستگاه‌ها فعال‌اند ولی تراکنش پایین است؛ آموزش پذیرنده‌ها و پیگیری استفاده‌ی واقعی از دستگاه");
+    if(ap <= avg.ap*0.8 && at < avg.at) rec.push("میانگین مبلغ هر تراکنش پایین است؛ تمرکز بر پذیرنده‌های با ارزش تراکنش بالاتر");
+    if(gp && gp.tx){
+      const ch = (g.tx-gp.tx)/gp.tx*100;
+      if(ch >= 10) strong.push(`تعداد تراکنش نسبت به ماه قبل ${ar0(ch)}٪ رشد داشته`);
+      else if(ch <= -10){ weak.push(`تعداد تراکنش نسبت به ماه قبل ${ar0(-ch)}٪ کاهش داشته`); rec.push("بررسی علت افت تراکنش نسبت به ماه قبل (دستگاه‌های خاموش، تغییر پذیرنده‌ها)"); }
+    }
+  }else weak.push("اطلاعات کلی (تراکنش، دستگاه، غیرفعال) برای آخرین ماه ثبت نشده است");
+  // PM / collection
+  [["pm","PM"],["col","جمع‌آوری"]].forEach(([k,label])=>{
+    const p = e[k];
+    if(!p.total){ return; }
+    if(p.pct >= AR_GOOD) strong.push(`${label}: ${ar0(p.pct)}٪ انجام شده (${ar0(p.success)} از ${ar0(p.total)})`);
+    else if(p.pct < AR_WEAK){ weak.push(`${label}: فقط ${ar0(p.pct)}٪ انجام شده و ${ar0(p.left)} مورد باقی مانده`); rec.push(`برنامه‌ی زمان‌بندی‌شده برای تکمیل ${ar0(p.left)} مورد ${label} باقی‌مانده و گزارش هفتگی پیشرفت`); }
+    else weak.push(`${label}: ${ar0(p.pct)}٪ انجام شده؛ ${ar0(p.left)} مورد هنوز باقی است`);
+  });
+  // marketing
+  if(e.mkt.has){
+    const a = e.mkt.ach;
+    const parts = `تعداد ${ar0(a.count)}٪ ، مبلغ ${ar0(a.amount)}٪ ، تراکنش ${ar0(a.tx)}٪ از هدف`;
+    if(e.mkt.score >= 100) strong.push(`بازاریابی: هدف‌ها محقق شده (${parts})`);
+    else if(e.mkt.score < 60){ weak.push(`بازاریابی: دور از هدف (${parts})`); rec.push("تعیین هدف هفتگی بازاریابی و پیگیری منظم؛ بررسی ضعیف‌ترین شاخص بازاریابی"); }
+    else weak.push(`بازاریابی: نسبی (${parts})`);
+  }
+  if(!weak.length && !rec.length) rec.push("روند خوب است؛ ادامه‌ی همین روش و استفاده از او برای راهنمایی همکاران ضعیف‌تر");
+  return {strong, weak, rec};
+}
+
+function arRenderResult(holder, d, emps){
+  const isSelf = currentUser.role!=="manager";
+  if(!emps.length){ holder.innerHTML = `<div class="section-card"><div class="empty-state">پشتیبانی برای تحلیل انتخاب نشده است.</div></div>`; return; }
+  const procs = [
+    {label:"اطلاعات کلی (فعال‌بودن دستگاه‌ها)", score:d.giScore, note: d.avg.dev ? `${ar0(d.avg.inact)} دستگاه غیرفعال از ${ar0(d.avg.dev)} (ماه ${adMonthLabel(d.latestMonth)})` : "داده ثبت نشده"},
+    {label:"PM", score:d.pm.pct, note: d.pm.total ? `${ar0(d.pm.success)} از ${ar0(d.pm.total)} انجام شده` : "داده ثبت نشده"},
+    {label:"جمع‌آوری", score:d.col.pct, note: d.col.total ? `${ar0(d.col.success)} از ${ar0(d.col.total)} انجام شده` : "داده ثبت نشده"},
+    {label:"بازاریابی (تحقق هدف)", score:d.mktScore, note: d.mktScore===null ? "داده ثبت نشده" : `میانگین تحقق تعداد، مبلغ و تراکنش نسبت به هدف`},
+  ];
+  const ranked = procs.filter(p=>p.score!==null).sort((a,b)=>b.score-a.score);
+  const best = ranked[0], worst = ranked[ranked.length-1];
+  // per-region overview
+  const regionNames = Array.from(new Set(d.emps.map(e=>e.region))).filter(n=>n!=="نامشخص");
+  const regionCards = regionNames.map(rn=>{
+    const es = d.emps.filter(e=>e.region===rn);
+    const gis = es.filter(e=>e.gi&&e.gi.dev);
+    const dev = gis.reduce((s,e)=>s+e.gi.dev,0), tx = gis.reduce((s,e)=>s+e.gi.tx,0), amt = gis.reduce((s,e)=>s+e.gi.amt,0), inact = gis.reduce((s,e)=>s+e.gi.inact,0);
+    const pt = es.reduce((s,e)=>s+e.pm.total,0), ps = es.reduce((s,e)=>s+e.pm.success,0);
+    const ct = es.reduce((s,e)=>s+e.col.total,0), cs = es.reduce((s,e)=>s+e.col.success,0);
+    const mk = es.filter(e=>e.mkt.has);
+    const lines = [];
+    if(dev) lines.push(`از نظر تراکنشی: ${ar0(tx)} تراکنش و ${ar0(amt)} ریال مبلغ روی ${ar0(dev)} دستگاه ثبت شده؛ یعنی به ازای هر دستگاه ${ar0(tx/dev)} تراکنش (TP) و ${ar0(amt/dev)} ریال (AP)، و میانگین هر تراکنش ${ar0(tx?amt/tx:0)} ریال (AT). ${ar0(inact)} دستگاه (${ar0(inact/dev*100)}٪) غیرفعال است.`);
+    else lines.push("اطلاعات کلی این ناحیه ثبت نشده است.");
+    lines.push(pt ? `PM: ${ar0(ps/pt*100)}٪ انجام شده (${ar0(ps)} از ${ar0(pt)}) — ${ps/pt*100>=AR_GOOD?"عملکرد خوب":ps/pt*100>=AR_WEAK?"عملکرد متوسط و نیازمند تکمیل":"عملکرد ضعیف"}.` : "PM: داده‌ای نیست.");
+    lines.push(ct ? `جمع‌آوری: ${ar0(cs/ct*100)}٪ انجام شده (${ar0(cs)} از ${ar0(ct)}) — ${cs/ct*100>=AR_GOOD?"عملکرد خوب":cs/ct*100>=AR_WEAK?"عملکرد متوسط و نیازمند تکمیل":"عملکرد ضعیف"}.` : "جمع‌آوری: داده‌ای نیست.");
+    lines.push(mk.length ? `بازاریابی: میانگین تحقق هدف ${ar0(mk.reduce((s,e)=>s+e.mkt.score,0)/mk.length)}٪.` : "بازاریابی: داده‌ای نیست.");
+    return `<div class="section-card"><h3>${isSelf ? "وضعیت شما" : `وضعیت ${rn} (${REGIONS[rn]?REGIONS[rn].manager:""})`}</h3><ul style="margin:0;padding-right:20px;line-height:2;font-size:13px;">${lines.map(l=>`<li>${l}</li>`).join("")}</ul></div>`;
+  }).join("");
+  // process recommendations
+  const weakNames = (k,thr)=>d.emps.filter(e=>e[k].total && e[k].pct<thr).sort((a,b)=>a[k].pct-b[k].pct).map(e=>`${e.name} (${ar0(e[k].pct)}٪)`);
+  const procRec = [];
+  const pmW = weakNames("pm",AR_WEAK), colW = weakNames("col",AR_WEAK);
+  procRec.push({t:"PM", txt: d.pm.total ? (pmW.length ? `پشتیبان‌های زیر ۵۰٪ انجام: ${pmW.join("، ")}. پیشنهاد: تقسیم مجدد PMهای باقی‌مانده، تعیین سقف زمانی هفتگی و پیگیری مدیر ناحیه.` : (d.pm.pct>=AR_GOOD ? "عملکرد کلی PM خوب است؛ فقط باقی‌مانده‌ها را زمان‌بندی کنید." : "عملکرد PM متوسط است؛ پیگیری باقی‌مانده‌ها را در برنامه‌ی هفتگی بگذارید.")) : "داده‌ی PM ثبت نشده است."});
+  procRec.push({t:"جمع‌آوری", txt: d.col.total ? (colW.length ? `پشتیبان‌های زیر ۵۰٪ انجام: ${colW.join("، ")}. پیشنهاد: اولویت‌بندی موارد جمع‌آوری و هماهنگی مسیر برای بستن موارد باز.` : (d.col.pct>=AR_GOOD ? "جمع‌آوری وضعیت خوبی دارد." : "جمع‌آوری متوسط است؛ برای مواردی که باز مانده برنامه‌ی روزانه تعیین شود.")) : "داده‌ی جمع‌آوری ثبت نشده است."});
+  const mkW = d.emps.filter(e=>e.mkt.has && e.mkt.score<60).map(e=>`${e.name} (${ar0(e.mkt.score)}٪)`);
+  procRec.push({t:"بازاریابی", txt: d.mktScore===null ? "داده‌ی بازاریابی ثبت نشده است." : (mkW.length ? `دور از هدف: ${mkW.join("، ")}. پیشنهاد: هدف‌گذاری هفتگی و بررسی ضعیف‌ترین شاخص (تعداد، مبلغ یا تراکنش) برای هر نفر.` : "بازاریابی در مسیر تحقق هدف است.")});
+  const ipHigh = d.emps.filter(e=>e.gi&&e.gi.dev&&e.gi.inact/e.gi.dev*100>Math.max(5,d.avg.inactPct*1.25)).map(e=>`${e.name} (${ar0(e.gi.inact/e.gi.dev*100)}٪)`);
+  procRec.push({t:"اطلاعات کلی و تراکنش", txt: d.avg.dev ? (ipHigh.length ? `درصد غیرفعال بالاتر از میانگین (${ar0(d.avg.inactPct)}٪): ${ipHigh.join("، ")}. پیشنهاد: پروژه‌ی فعال‌سازی دستگاه‌های غیرفعال و پیگیری ماهانه.` : `غیرفعال‌ها در حد میانگین (${ar0(d.avg.inactPct)}٪) است؛ تمرکز روی افزایش TP و AP.`) : "اطلاعات کلی ثبت نشده است."});
+
+  const empCards = d.emps.map(e=>{
+    const ins = arEmployeeInsights(e, d.avg);
+    const li = a=>a.length ? `<ul style="margin:4px 0 0;padding-right:20px;line-height:1.9;font-size:12.5px;">${a.map(x=>`<li>${x}</li>`).join("")}</ul>` : `<div style="font-size:12.5px;color:var(--muted);">موردی دیده نشد.</div>`;
+    return `<div class="section-card"><h3>${e.name} <span style="font-size:12px;color:var(--muted);font-weight:500;">(${e.region})</span></h3>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:240px;"><strong style="color:var(--good);">نقاط قوت</strong>${li(ins.strong)}</div>
+        <div style="flex:1;min-width:240px;"><strong style="color:var(--warn);">نقاط ضعف</strong>${li(ins.weak)}</div>
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:var(--navy-pale);border-radius:9px;font-size:12.5px;"><strong style="color:var(--navy);">پیشنهاد مدیریتی:</strong> ${ins.rec.length ? ins.rec.join("؛ ") : "—"}</div>
+    </div>`;
+  }).join("");
+
+  holder.innerHTML = `
+    <div class="notice">${isSelf ? "قوت و ضعف شما نسبت به میانگین هم‌تیمی‌های ناحیه‌ی خودتان سنجیده می‌شود. " : ""}تحلیل بر اساس داده‌های فعلی سامانه ساخته شد. اطلاعات کلی: آخرین ماه ثبت‌شده${d.latestMonth?` (${adMonthLabel(d.latestMonth)})`:""}${d.prevMonth?` در مقایسه با ${adMonthLabel(d.prevMonth)}`:""}. PM و جمع‌آوری: درصد انجام (≥${AR_GOOD}٪ خوب، کمتر از ${AR_WEAK}٪ ضعیف). بازاریابی: تحقق هدف ماهانه (۴۰ مورد، ۱۰۰ میلیارد ریال، ۱۰٬۰۰۰ تراکنش به ازای هر پشتیبان).</div>
+    ${regionCards}
+    <div class="section-card"><h3>مقایسه‌ی فرآیندها</h3>
+      <div id="arProcChart"></div>
+      <ul style="margin:10px 0 0;padding-right:20px;line-height:2;font-size:13px;">
+        ${ranked.length>=2 ? `<li><strong style="color:var(--good);">بهترین فرآیند:</strong> ${best.label} (${ar0(best.score)}٪) — ${best.note}</li><li><strong style="color:var(--warn);">ضعیف‌ترین فرآیند:</strong> ${worst.label} (${ar0(worst.score)}٪) — ${worst.note}</li>` : `<li>برای مقایسه حداقل دو فرآیند باید داده داشته باشند.</li>`}
+        ${procs.filter(p=>p.score===null).map(p=>`<li style="color:var(--muted);">${p.label}: داده ثبت نشده</li>`).join("")}
+      </ul>
+    </div>
+    <div class="section-card"><h3>پیشنهاد مدیریتی برای هر فرآیند</h3>
+      <table><tbody>${procRec.map(r=>`<tr><td style="width:150px;"><strong>${r.t}</strong></td><td>${r.txt}</td></tr>`).join("")}</tbody></table></div>
+    <h3 style="margin:18px 0 10px;color:var(--navy);">تحلیل هر پشتیبان</h3>
+    ${empCards}`;
+  chartBars("arProcChart", ranked.map(p=>({label:p.label, value:Math.round(p.score), color:p.score>=AR_GOOD?"#2e7d5b":p.score>=AR_WEAK?"#c9a227":"#c0392b"})), {formatter:v=>v+"٪", maxValue:100});
+}
+
+function renderAssistantRegionView(){
+  const holder = document.getElementById("arFilters");
+  holder.innerHTML = "";
+  const allowed = allowedDailyPerfEmployees();
+  const row = document.createElement("div");
+  const isMgrAr = currentUser.role==="manager";
+  row.innerHTML = isMgrAr ? `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">پشتیبان (چندانتخابی؛ بدون انتخاب = همه)</div>` : `<div style="font-size:12.5px;color:var(--muted);">تحلیل عملکرد ${currentUser.name}</div>`;
+  const w = document.createElement("div"); w.style.cssText="display:flex;flex-wrap:wrap;gap:6px;";
+  if(isMgrAr) w.appendChild(giPill("همه", arState.emps.size===0, ()=>{ arState.emps=new Set(); arState.ran=false; renderAssistantRegionView(); }));
+  if(isMgrAr) allowed.forEach(n=> w.appendChild(giPill(n, arState.emps.has(n), ()=>{
+    const cur=new Set(arState.emps); if(cur.has(n)) cur.delete(n); else cur.add(n);
+    arState.emps=cur; arState.ran=false; renderAssistantRegionView(); })));
+  row.appendChild(w);
+  const btn = document.createElement("button"); btn.className="btn-sm"; btn.style.marginTop="14px"; btn.textContent="اجرای تحلیل";
+  btn.onclick = ()=>{ arState.ran = true; renderAssistantRegionView(); };
+  row.appendChild(btn);
+  holder.appendChild(row);
+  const out = document.getElementById("arResult");
+  if(!arState.ran){ out.innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">🧠</div>پشتیبان‌ها را انتخاب کنید و روی «اجرای تحلیل» بزنید.</div></div>`; return; }
+  const emps = arScopeEmployees();
+  const team = currentUser.role==="manager" ? emps : ((REGIONS[regionOfEmployee(currentUser.name)]||{members:emps}).members);
+  arRenderResult(out, arCompute(emps, team), emps);
 }
 
 function renderAssistantDailyView(){
