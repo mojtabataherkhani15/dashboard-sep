@@ -897,7 +897,7 @@ function emptyPmFilterSet(){
 }
 let filterStates = {}; // per-tab filter isolation — each tab id gets its own independent filter set
 function getFilters(tabId){
-  if(!filterStates[tabId]) filterStates[tabId] = (tabId==="pm" ? emptyPmFilterSet() : emptyFilterSet());
+  if(!filterStates[tabId]) filterStates[tabId] = ((tabId==="pm" || tabId==="collection") ? emptyPmFilterSet() : emptyFilterSet());
   return filterStates[tabId];
 }
 let trendMode = "monthly"; // monthly | quarterly
@@ -4165,10 +4165,10 @@ function pickBestSheetGeneric(wb, hintsMap){
   return best;
 }
 function classifyPmStatus(raw){
-  const s = (raw||"").toString().trim();
-  if(s.includes("تایید")) return "موفق";
-  if(s.includes("آماده پشتیبانی")) return "آماده پشتیبانی";
-  return "سایر";
+  // Only «تایید خودکار» and «تایید نهایی» count as success; every other status = آماده پشتیبانی
+  const s = (raw||"").toString().replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/ؤ/g,"و").replace(/أ/g,"ا").replace(/[\u200c\u200f\u200e]/g," ").replace(/\s+/g," ").trim();
+  if(s.includes("تایید خودکار") || s.includes("تایید نهایی") || s.includes("تاییدخودکار") || s.includes("تایید‌نهایی")) return "موفق";
+  return "آماده پشتیبانی";
 }
 function pmAvailableValues(field){
   const set = new Set();
@@ -4238,8 +4238,14 @@ function pmScopedRecords(){
   }
   return scope;
 }
+function pmBreakdownNote(){
+  const all = pmScopedRecords();
+  const pm = all.filter(isPmOrder).length, col = all.filter(isCollectionOrder).length, mk = all.filter(isMarketingSupportOrder).length;
+  return `<div class="notice" style="margin-bottom:12px;">کل ردیف‌های ثبت‌شده: <b>${fmtNum(all.length)}</b>. در آمار PM: <b>${fmtNum(pm)}</b> ردیف${col?` (شامل <b>${fmtNum(col)}</b> ردیف دارای دستور جمع‌آوری که جزو PM هم حساب می‌شود؛ تب «جمع‌آوری» همین ردیف‌ها را جداگانه نشان می‌دهد)`:""}${mk?` — ${fmtNum(mk)} ردیف بازاریابی در تب‌های دیگر حساب می‌شود`:""}.</div>`;
+}
 function renderPmView(){
   buildPmFilterBar("pmFiltersHolder");
+  document.getElementById("pmFiltersHolder").insertAdjacentHTML("afterbegin", pmBreakdownNote());
   const filtered = applyPmFilters(pmScopedRecords().filter(isPmOrder));
 
   const overallList = pmGroupStats(filtered, ()=>"all", ()=>"کل");
@@ -4453,7 +4459,8 @@ function isMarketingSupportOrder(r){
 // the PM tab must only ever show the actual PM-type rows — جمع‌آوری and بازاریابی already have
 // their own dedicated tabs/pages, so they're excluded here rather than leaking into PM's stats.
 function isPmOrder(r){
-  return !isCollectionOrder(r) && !isMarketingSupportOrder(r);
+  // Rows that carry a collection order are STILL PM rows (counted in PM stats); only marketing rows are excluded.
+  return !isMarketingSupportOrder(r);
 }
 function collectionScopedRecords(){
   return pmScopedRecords().filter(isCollectionOrder);
@@ -4506,6 +4513,7 @@ function buildCollectionFilterBar(containerId){
 }
 function renderCollectionView(){
   buildCollectionFilterBar("collectionFiltersHolder");
+  document.getElementById("collectionFiltersHolder").insertAdjacentHTML("afterbegin", pmBreakdownNote());
   const filtered = applyCollectionFilters(collectionScopedRecords());
 
   const overallList = pmGroupStats(filtered, ()=>"all", ()=>"کل");
@@ -4665,15 +4673,30 @@ async function confirmPmMapping(){
     period: String(row[mapping.period]||"").trim(),
     status: String(row[mapping.status]||"").trim(),
     supportOrder: mapping.supportOrder ? String(row[mapping.supportOrder]||"").trim() : "",
-  })).filter(r=>r.terminalId);
+  })).filter(r=>r.terminalId || r.store || r.address || r.status || r.supportOrder || r.period); // keep every non-blank row
+
+  // ---- recognition report ----
+  const withTerminal = newPmRecords.filter(r=>r.terminalId);
+  const uniqueTerminals = new Set(withTerminal.map(r=>r.terminalId)).size;
+  const noTerminal = newPmRecords.length - withTerminal.length;
+  const colN = newPmRecords.filter(isCollectionOrder).length, mktN = newPmRecords.filter(isMarketingSupportOrder).length, pmN = newPmRecords.filter(isPmOrder).length;
+  const okN = newPmRecords.filter(r=>classifyPmStatus(r.status)==="موفق").length;
+  const unknownEmp = newPmRecords.filter(r=>!EMPLOYEES.some(e=>e.name===r.employee)).length;
+  const reportHtml = `<div style="margin-top:8px;font-size:12.5px;line-height:2;">
+    کل ردیف‌های فایل: <b>${fmtNum(rows.length)}</b> — شناخته‌شده و ذخیره‌شده: <b>${fmtNum(newPmRecords.length)}</b> (ردیف خالی ردشده: ${fmtNum(rows.length-newPmRecords.length)})<br>
+    ترمینال یکتا: <b>${fmtNum(uniqueTerminals)}</b> — ردیف بدون شماره ترمینال: ${fmtNum(noTerminal)}<br>
+    PM: <b>${fmtNum(pmN)}</b> — جمع‌آوری: <b>${fmtNum(colN)}</b> — بازاریابی: <b>${fmtNum(mktN)}</b><br>
+    موفق (تایید خودکار/نهایی): <b>${fmtNum(okN)}</b> — آماده پشتیبانی: <b>${fmtNum(newPmRecords.length-okN)}</b><br>
+    ${unknownEmp ? `<span style="color:var(--warn);">ردیف با پشتیبان نامشخص یا خارج از فهرست: ${fmtNum(unknownEmp)}</span>` : "همه‌ی پشتیبان‌ها شناسایی شدند."}
+  </div>`;
 
   document.getElementById("pmMappingMsg").innerHTML = `در حال ذخیره در پایگاه‌داده مشترک...`;
   const saved = await supaSetAppData("pm_records", newPmRecords);
   if(saved){
     pmRecords = newPmRecords;
     filterStates["pm"] = emptyPmFilterSet();
-    document.getElementById("pmMappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${newPmRecords.length} رکورد PM با موفقیت ذخیره شد و برای همه کاربران در دسترس است.</span>`;
-    setTimeout(()=>{ document.getElementById("pmMappingCard").classList.add("hidden"); document.getElementById("pmExcelInput").value=""; }, 1400);
+    document.getElementById("pmMappingMsg").innerHTML = `<span style="color:var(--good);">✔ ${newPmRecords.length} رکورد با موفقیت ذخیره شد و برای همه کاربران در دسترس است.</span>${reportHtml}`;
+    document.getElementById("pmExcelInput").value="";
   }else{
     pmRecords = newPmRecords;
     document.getElementById("pmMappingMsg").innerHTML = `<span style="color:var(--warn);">⚠ داده پردازش شد اما ذخیره در پایگاه‌داده مشترک ناموفق بود.</span>`;
