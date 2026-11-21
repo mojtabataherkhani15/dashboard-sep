@@ -532,6 +532,7 @@ tbody tr:hover{background:var(--navy-pale-2);}
     <div class="view" id="view-pm">
       <div id="pmFiltersHolder"></div>
       <div class="kpi-grid" id="pmKpis"></div>
+      <div class="section-card"><h3>دستورات</h3><div class="kpi-grid" id="pmOrderCards" style="margin-bottom:0;"></div></div>
       <div class="section-card">
         <h3>عملکرد PM به تفکیک کارمند</h3>
         <div id="pmEmployeeTableHolder"></div>
@@ -2848,30 +2849,80 @@ function giEntities(recs, by){
   recs.forEach(r=>{
     const name = by==="region" ? regionOfEmployee(r.employee) : r.employee;
     if(by==="region" && name==="نامشخص") return;
-    const e = map[name] || (map[name] = {name, tx:0, amt:0, dev:0, inact:0});
+    const e = map[name] || (map[name] = {name, region: by==="region" ? name : regionOfEmployee(r.employee), tx:0, amt:0, dev:0, inact:0});
     e.tx += Number(r.txCount)||0; e.amt += Number(r.txAmount)||0;
     e.dev += Number(r.deviceCount)||0; e.inact += Number(r.inactiveCount)||0;
   });
   return Object.values(map);
 }
 
-function giTableHtml(ents, key, entityLabel){
+function giTableHtml(ents, key, entityLabel, ctx){
   const def = GI_METRICS.find(m=>m.key===key);
-  const sum = ents.reduce((s,e)=>s+def.get(e),0) || 1;
-  let rows = ents.map(e=>({e, v:def.get(e), pct: e.dev ? e.inact/e.dev*100 : 0}));
-  rows.sort((a,b)=> key==="inact" ? (a.pct-b.pct) : (b.v-a.v));
   const badge = i => `<span class="rank-badge ${i===0?"gold":i===1?"silver":i===2?"bronze":""}">${fmtNum(i+1)}</span>`;
+  const pctOf = e => e.dev ? e.inact/e.dev*100 : 0;
+  const better = (a,b)=> key==="inact" ? (pctOf(a)-pctOf(b)) : (def.get(b)-def.get(a));
+  if(ctx){
+    // ranks are computed against the WHOLE branch (and the employee's region), not just the filtered rows
+    const branch = ctx.all.slice().sort(better);
+    const bRank = {}; branch.forEach((e,i)=>bRank[e.name]=i+1);
+    const rRank = {}, rCount = {};
+    branch.forEach(e=>{ rCount[e.region] = (rCount[e.region]||0)+1; rRank[e.name] = rCount[e.region]; });
+    const rTotal = {}; branch.forEach(e=>{ rTotal[e.region]=(rTotal[e.region]||0)+1; });
+    const sum = ctx.all.reduce((s,e)=>s+def.get(e),0) || 1;
+    const rows = ents.slice().sort((a,b)=>bRank[a.name]-bRank[b.name]);
+    const nReg = new Set(ctx.all.map(e=>e.region)).size;
+    const note = `<p class="small-note" style="margin:6px 0 0;">رتبه‌ها بین <b>${fmtNum(branch.length)}</b> پشتیبان شعبه (از <b>${fmtNum(nReg)}</b> ناحیه) که برای ماه انتخاب‌شده اطلاعاتشان ثبت شده محاسبه شده است.${nReg<2 ? ` <span style="color:var(--warn);">فقط یک ناحیه داده دارد؛ تا اطلاعات سایر ناحیه‌ها ثبت نشود رتبه شعبه و رتبه ناحیه یکی می‌شود.</span>` : ""}</p>`;
+    const rk = e=>`<td>${badge(bRank[e.name]-1)} <span style="color:var(--muted);font-size:11px;">از ${fmtNum(branch.length)}</span></td><td>${fmtNum(rRank[e.name])} <span style="color:var(--muted);font-size:11px;">از ${fmtNum(rTotal[e.region])} (${e.region})</span></td>`;
+    if(key==="inact"){
+      return `<h4 style="margin:6px 0;color:var(--navy);">رتبه‌بندی غیرفعال (کمترین درصد غیرفعال بهترین است)</h4>
+      <table><thead><tr><th>رتبه در شعبه</th><th>رتبه در ناحیه</th><th>${entityLabel}</th><th>تعداد غیرفعال</th><th>درصد غیرفعال از دستگاه</th><th>سهم از کل غیرفعال‌های شعبه</th></tr></thead><tbody>
+      ${rows.map(e=>`<tr>${rk(e)}<td>${e.name}</td><td>${giF0(e.inact)}</td><td>${giP0(pctOf(e))}</td><td>${giP0(e.inact/sum*100)}</td></tr>`).join("")}</tbody></table>${note}`;
+    }
+    return `<h4 style="margin:6px 0;color:var(--navy);">رتبه‌بندی ${def.label} (بر اساس سهم از کل شعبه)</h4>
+      <table><thead><tr><th>رتبه در شعبه</th><th>رتبه در ناحیه</th><th>${entityLabel}</th><th>مقدار</th><th>سهم از کل شعبه</th></tr></thead><tbody>
+      ${rows.map(e=>`<tr>${rk(e)}<td>${e.name}</td><td>${giF0(def.get(e))}</td><td>${giP0(def.get(e)/sum*100)}</td></tr>`).join("")}</tbody></table>${note}`;
+  }
+  const isReg = entityLabel==="ناحیه";
+  const rkH = isReg ? "رتبه در شعبه" : "رتبه", shH = isReg ? "سهم از کل شعبه" : "سهم از کل";
+  const sum = ents.reduce((s,e)=>s+def.get(e),0) || 1;
+  let rows = ents.map(e=>({e, v:def.get(e), pct: pctOf(e)}));
+  rows.sort((a,b)=> key==="inact" ? (a.pct-b.pct) : (b.v-a.v));
   if(key==="inact"){
     return `<h4 style="margin:6px 0;color:var(--navy);">رتبه‌بندی غیرفعال (کمترین درصد غیرفعال بهترین است)</h4>
-    <table><thead><tr><th>رتبه</th><th>${entityLabel}</th><th>تعداد غیرفعال</th><th>درصد غیرفعال از دستگاه</th><th>سهم از کل غیرفعال‌ها</th></tr></thead><tbody>
+    <table><thead><tr><th>${rkH}</th><th>${entityLabel}</th><th>تعداد غیرفعال</th><th>درصد غیرفعال از دستگاه</th><th>${isReg ? "سهم از کل غیرفعال‌های شعبه" : "سهم از کل غیرفعال‌ها"}</th></tr></thead><tbody>
     ${rows.map((r,i)=>`<tr><td>${badge(i)}</td><td>${r.e.name}</td><td>${giF0(r.e.inact)}</td><td>${giP0(r.pct)}</td><td>${giP0(r.v/sum*100)}</td></tr>`).join("")}</tbody></table>`;
   }
   return `<h4 style="margin:6px 0;color:var(--navy);">رتبه‌بندی ${def.label} (بر اساس سهم درصدی)</h4>
-    <table><thead><tr><th>رتبه</th><th>${entityLabel}</th><th>مقدار</th><th>سهم از کل</th></tr></thead><tbody>
+    <table><thead><tr><th>${rkH}</th><th>${entityLabel}</th><th>مقدار</th><th>${shH}</th></tr></thead><tbody>
     ${rows.map((r,i)=>`<tr><td>${badge(i)}</td><td>${r.e.name}</td><td>${giF0(r.v)}</td><td>${giP0(r.v/sum*100)}</td></tr>`).join("")}</tbody></table>`;
 }
 
-function giRenderDashboard(containerId, ents, uid, entityLabel){
+// Two comparison pies: (1) inside the person's own region, (2) against every employee in the branch
+function giComparePies(m, ents, ctx){
+  const NAVY="#1e3a5f", GOLD="#c9a227";
+  const all = ctx.all, S = ents;
+  const sRegions = new Set(S.map(e=>e.region));
+  const regionAll = all.filter(e=>sRegions.has(e.region));
+  const sel = S.reduce((a,e)=>a+m.get(e),0), regTot = regionAll.reduce((a,e)=>a+m.get(e),0), allTot = all.reduce((a,e)=>a+m.get(e),0);
+  const who = S.length===1 ? S[0].name : "انتخاب‌شده‌ها";
+  const regionName = sRegions.size===1 ? Array.from(sRegions)[0] : "ناحیه‌های منتخب";
+  let p1, p2;
+  if(S.length >= regionAll.length){
+    p1 = {title:"سهم هر پشتیبان در ناحیه", items:S.map(e=>({label:e.name, value:m.get(e)})).sort((a,b)=>b.value-a.value)};
+  }else{
+    p1 = {title:"مقایسه با سایر ناحیه (هم‌ناحیه‌ای‌ها)", items:[{label:"سهم "+who, value:sel, color:NAVY},{label:"سایر ناحیه", value:Math.max(0,regTot-sel), color:GOLD}]};
+  }
+  if(S.length >= all.length){
+    const byReg = {}; all.forEach(e=>{ byReg[e.region]=(byReg[e.region]||0)+m.get(e); });
+    p2 = {title:"سهم نواحی از کل شعبه", items:Object.entries(byReg).map(([k,v])=>({label:k, value:v})).sort((a,b)=>b.value-a.value)};
+  }else if(S.length === regionAll.length){
+    p2 = {title:"سهم "+regionName+" از کل شعبه", items:[{label:regionName, value:sel, color:NAVY},{label:"سایر ناحیه‌ها", value:Math.max(0,allTot-sel), color:GOLD}]};
+  }else{
+    p2 = {title:`سهم از کل ${fmtNum(all.length)} پشتیبان شعبه`, items:[{label:"سهم "+who, value:sel, color:NAVY},{label:"سایر پشتیبان‌های شعبه", value:Math.max(0,allTot-sel), color:GOLD}]};
+  }
+  return {p1, p2};
+}
+function giRenderDashboard(containerId, ents, uid, entityLabel, ctx){
   const el = document.getElementById(containerId);
   if(!ents.length){ el.innerHTML = `<div class="section-card"><div class="empty-state"><div class="big">📭</div>برای ماه/پشتیبان انتخاب‌شده هنوز اطلاعات کلی وارد نشده است.</div></div>`; return; }
   const T = ents.reduce((a,e)=>({tx:a.tx+e.tx, amt:a.amt+e.amt, dev:a.dev+e.dev, inact:a.inact+e.inact}),{tx:0,amt:0,dev:0,inact:0});
@@ -2897,16 +2948,31 @@ function giRenderDashboard(containerId, ents, uid, entityLabel){
     </div>
     <div class="section-card"><h3>جدول رتبه‌بندی</h3>
       <div class="tab-pill-group" id="${uid}_tablePills"></div>
-      ${keys.map(k=>giTableHtml(ents,k,entityLabel)).join('<div style="height:14px;"></div>')}
+      ${keys.map(k=>giTableHtml(ents,k,entityLabel,ctx)).join('<div style="height:14px;"></div>')}
     </div>
-    ${["dev","amt","tx"].map(k=>chartCard(byKey(k))).join("")}
-    ${["tp","ap","at","inact"].map(k=>chartCard(byKey(k))).join("")}`;
+    ${ctx ? `<div class="section-card"><h3>مقایسه با کل شعبه</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+        ${["dev","amt","tx","tp","ap","at","inact"].map(k=>`<div style="border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-weight:700;color:var(--navy);margin-bottom:8px;font-size:13px;">${byKey(k).label}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;" id="${uid}_t1_${k}"></div><div id="${uid}_pie_${k}"></div>
+          <div style="font-size:11.5px;color:var(--muted);margin:10px 0 4px;" id="${uid}_t2_${k}"></div><div id="${uid}_pie2_${k}"></div></div>`).join("")}
+      </div></div>` : `${["dev","amt","tx"].map(k=>chartCard(byKey(k))).join("")}
+    ${["tp","ap","at","inact"].map(k=>chartCard(byKey(k))).join("")}`}`;
   const pills = document.getElementById(uid+"_tablePills");
-  metricOpts.forEach(([k,l])=> pills.appendChild(giPill(l, sel===k, ()=>{ giTableMetric[uid]=k; giRenderDashboard(containerId, ents, uid, entityLabel); })));
+  metricOpts.forEach(([k,l])=> pills.appendChild(giPill(l, sel===k, ()=>{ giTableMetric[uid]=k; giRenderDashboard(containerId, ents, uid, entityLabel, ctx); })));
   GI_METRICS.forEach(m=>{
-    const items = ents.map(e=>({label:e.name, value:m.get(e)})).sort((a,b)=>b.value-a.value);
-    chartPie(uid+"_pie_"+m.key, items, {fmt:giF0, pctDigits:0});
-    chartBars(uid+"_bar_"+m.key, items, {formatter:giF0, color:"#4472a8"});
+    if(ctx){
+      const c = giComparePies(m, ents, ctx);
+      document.getElementById(uid+"_t1_"+m.key).textContent = c.p1.title;
+      document.getElementById(uid+"_t2_"+m.key).textContent = c.p2.title;
+      chartPie(uid+"_pie_"+m.key, c.p1.items, {fmt:giF0, pctDigits:0});
+      chartPie(uid+"_pie2_"+m.key, c.p2.items, {fmt:giF0, pctDigits:0});
+    }else{
+      const items = ents.map(e=>({label:e.name, value:m.get(e)})).sort((a,b)=>b.value-a.value);
+      const pieItems = items.slice();
+      if(entityLabel==="ناحیه") Object.keys(REGIONS).forEach(rn=>{ if(!pieItems.some(i=>i.label===rn)) pieItems.push({label:rn, value:0}); }); // always show all three regions
+      chartPie(uid+"_pie_"+m.key, pieItems, {fmt:giF0, pctDigits:0});
+      chartBars(uid+"_bar_"+m.key, items, {formatter:giF0, color:"#4472a8"});
+    }
   });
 }
 
@@ -2955,7 +3021,9 @@ function giRenderTrend(containerId, uid, by, names, scopeRecs, entityLabel){
     </div>
     <div class="section-card"><h3>نمودار روند ${mdef.label}</h3><div id="${uid}_tChart"></div>
       <p class="small-note">ماهی که برای آن مورد ثبت نشده باشد در نمودار صفر نمایش داده می‌شود ولی در تحلیل حساب نمی‌شود.</p></div>
-    <div id="${uid}_tCards"></div>`;
+    <div id="${uid}_tCards"></div>
+    <h3 style="margin:18px 0 10px;color:var(--navy);">روند PM و جمع‌آوری (دوره به دوره)</h3>
+    <div id="${uid}_pTrend"></div>`;
   const mh = document.getElementById(uid+"_tMetric"), eh = document.getElementById(uid+"_tEnt");
   const again = ()=>giRenderTrend(containerId, uid, by, names, scopeRecs, entityLabel);
   GI_TREND_METRICS.forEach(m=> mh.appendChild(giPill(m.label, st.metric===m.key, ()=>{ st.metric=m.key; again(); })));
@@ -2965,6 +3033,7 @@ function giRenderTrend(containerId, uid, by, names, scopeRecs, entityLabel){
     return {name:n, pts, color:palette[i%palette.length], values: allMonths.map(mk=>{ const p=pts.find(x=>x.month===mk); return p ? Math.round(p.value) : 0; })};
   });
   chartLine(uid+"_tChart", allMonths.map(mk=>PERSIAN_MONTHS[Number(mk.split("-")[1])-1]), series.map(s=>({name:s.name, values:s.values, color:s.color})), {height:280});
+  giProcessTrend(uid, by, sel);
   document.getElementById(uid+"_tCards").innerHTML = series.map(s=>{
     const v = giTrendVerdict(s.pts, bad);
     const first = s.pts[0], last = s.pts[s.pts.length-1];
@@ -2981,6 +3050,53 @@ function giRenderTrend(containerId, uid, by, names, scopeRecs, entityLabel){
       }).join("")}</tbody></table></div>`;
   }).join("");
 }
+// ---- PM / collection trend, period by period (for the selected employees / regions) ----
+function giPeriodKey(p){ const m = String(p||"").match(/(\d{4})\D+(\d{1,2})/); return m ? [Number(m[1]),Number(m[2])] : [0,0]; }
+const GI_ORDINALS = ["اول","دوم","سوم","چهارم","پنجم","ششم","هفتم","هشتم","نهم","دهم","یازدهم","دوازدهم"];
+function giPeriodLabel(p){ const [y,m] = giPeriodKey(p); return (y && m>=1 && m<=12) ? "دوره "+GI_ORDINALS[m-1]+" "+y : String(p||"—"); }
+function giProcessSeries(by, name, listFn){
+  const recs = pmScopedRecords().filter(listFn).filter(r=> by==="region" ? regionOfEmployee(r.employee)===name : r.employee===name);
+  const map = {};
+  recs.forEach(r=>{
+    const per = r.period || "—";
+    const o = map[per] || (map[per] = {period:per, total:0, success:0});
+    o.total++; if(classifyPmStatus(r.status)==="موفق") o.success++;
+  });
+  return Object.values(map).sort((a,b)=>{ const x=giPeriodKey(a.period), y=giPeriodKey(b.period); return x[0]-y[0] || x[1]-y[1]; })
+    .map(o=>({...o, left:o.total-o.success, pct:o.total ? o.success/o.total*100 : 0}));
+}
+function giProcessTrend(uid, by, sel){
+  const holder = document.getElementById(uid+"_pTrend");
+  if(!holder) return;
+  const palette = ["#1e3a5f","#c0392b","#2e7d5b","#c9a227","#7a5c96","#4472a8","#a5652f","#5c6b7a"];
+  const procs = [{key:"pm", label:"PM", fn:isPmOrder},{key:"col", label:"جمع‌آوری", fn:isCollectionOrder}];
+  holder.innerHTML = procs.map(pr=>{
+    const per = sel.map(n=>({n, pts:giProcessSeries(by,n,pr.fn)}));
+    const any = per.some(x=>x.pts.length);
+    return `<div class="section-card"><h3>روند ${pr.label} — دوره به دوره (درصد انجام)</h3>
+      ${any ? `<div id="${uid}_pt_${pr.key}"></div>` : `<div class="empty-state">برای ${pr.label} داده‌ای ثبت نشده است.</div>`}
+    </div>
+    ${per.filter(x=>x.pts.length).map(x=>{
+      const last = x.pts[x.pts.length-1], prev = x.pts.length>1 ? x.pts[x.pts.length-2] : null;
+      let verdict = `<span class="pill neutral">برای مقایسه حداقل دو دوره لازم است</span>`;
+      if(prev){ const d = Math.round(last.pct)-Math.round(prev.pct); verdict = d===0 ? `<span class="pill neutral">نسبت به دوره قبل ثابت</span>` : `<span class="pill ${d>0?"good":"warn"}">${d>0?"نسبت به دوره قبل صعودی ▲":"نسبت به دوره قبل نزولی ▼"}</span>`; }
+      return `<div class="section-card"><h3>${x.n} — ${pr.label} <span style="margin-right:8px;">${verdict}</span></h3>
+        <table><thead><tr><th>دوره</th><th>تعداد کل</th><th>موفق</th><th>مانده</th><th>درصد انجام</th><th>تغییر نسبت به دوره قبل</th><th>وضعیت</th></tr></thead><tbody>
+        ${x.pts.map((p,i)=>{
+          if(i===0) return `<tr><td>${giPeriodLabel(p.period)}</td><td>${giF0(p.total)}</td><td>${giF0(p.success)}</td><td>${giF0(p.left)}</td><td>${giP0(p.pct)}</td><td>—</td><td>—</td></tr>`;
+          const d = Math.round(p.pct)-Math.round(x.pts[i-1].pct);
+          return `<tr><td>${giPeriodLabel(p.period)}</td><td>${giF0(p.total)}</td><td>${giF0(p.success)}</td><td>${giF0(p.left)}</td><td>${giP0(p.pct)}</td><td>${d>0?"+":""}${giF0(d)} واحد درصد</td><td>${d===0?`<span class="pill neutral">ثابت</span>`:`<span class="pill ${d>0?"good":"warn"}">${d>0?"صعودی ▲":"نزولی ▼"}</span>`}</td></tr>`;
+        }).join("")}</tbody></table></div>`;
+    }).join("")}`;
+  }).join("");
+  procs.forEach(pr=>{
+    const per = sel.map(n=>({n, pts:giProcessSeries(by,n,pr.fn)}));
+    const periods = Array.from(new Set(per.flatMap(x=>x.pts.map(p=>p.period)))).sort((a,b)=>{ const x=giPeriodKey(a), y=giPeriodKey(b); return x[0]-y[0] || x[1]-y[1]; });
+    if(!periods.length) return;
+    chartLine(uid+"_pt_"+pr.key, periods.map(giPeriodLabel), per.map((x,i)=>({name:x.n, color:palette[i%palette.length], values:periods.map(pd=>{ const p=x.pts.find(q=>q.period===pd); return p?Math.round(p.pct):0; })})), {height:260});
+  });
+}
+
 function giTabsBar(holderId, current, setFn){
   const h = document.getElementById(holderId); h.innerHTML = "";
   [["overview","نمای کلی"],["trend","روند عملکرد"]].forEach(([k,l])=> h.appendChild(giPill(l, current===k, ()=>setFn(k))));
@@ -3012,7 +3128,9 @@ function renderGeneralInfoView(){
   }
   const months = giEffectiveMonths(giState.months);
   const recs = generalInfo.filter(r=>months.has(r.month) && allowed.includes(r.employee) && (giState.emps.size===0 || giState.emps.has(r.employee)));
-  giRenderDashboard("giBody", giEntities(recs,"employee"), "gi", "پشتیبان");
+  const branchEnts = giEntities(generalInfo.filter(r=>months.has(r.month)), "employee");
+  const shown = giEntities(recs,"employee");
+  giRenderDashboard("giBody", shown, "gi", "پشتیبان", {all:branchEnts, full: shown.length>=branchEnts.length});
 }
 function giRenderRegions(){
   const holder = document.getElementById("giRegFilters");
@@ -4243,6 +4361,25 @@ function pmBreakdownNote(){
   const pm = all.filter(isPmOrder).length, col = all.filter(isCollectionOrder).length, mk = all.filter(isMarketingSupportOrder).length;
   return `<div class="notice" style="margin-bottom:12px;">کل ردیف‌های ثبت‌شده: <b>${fmtNum(all.length)}</b>. در آمار PM: <b>${fmtNum(pm)}</b> ردیف${col?` (شامل <b>${fmtNum(col)}</b> ردیف دارای دستور جمع‌آوری که جزو PM هم حساب می‌شود؛ تب «جمع‌آوری» همین ردیف‌ها را جداگانه نشان می‌دهد)`:""}${mk?` — ${fmtNum(mk)} ردیف بازاریابی در تب‌های دیگر حساب می‌شود`:""}.</div>`;
 }
+const PM_ORDER_CARDS = [
+  {key:"g2",   label:"بی‌سیم 2G",               color:"#2f6fb5", bg:"#eaf3fc", test:t=>t.includes("2g")},
+  {key:"g4",   label:"بی‌سیم 4G فاقد تراکنش",    color:"#7a4fb0", bg:"#f3edfa", test:t=>t.includes("4g")},
+  {key:"bank", label:"نیاز به تغییر بانک",        color:"#c9731a", bg:"#fdf1e3", test:t=>t.includes("تغییر بانک")},
+  {key:"kahraba", label:"پروژه کهربا",            color:"#2e8b57", bg:"#e8f6ee", test:t=>t.includes("کهربا")},
+  {key:"revive", label:"احیا کارتخوان",           color:"#c0392b", bg:"#fbeceb", test:t=>t.includes("احیا")},
+];
+function pmNormOrder(txt){
+  return String(txt||"").toLowerCase().replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/[\u200c]/g," ").replace(/\s+/g," ");
+}
+function pmRenderOrderCards(filtered){
+  const counts = {}; PM_ORDER_CARDS.forEach(c=>counts[c.key]=0);
+  filtered.forEach(r=>{
+    const t = pmNormOrder(r.supportOrder);
+    PM_ORDER_CARDS.forEach(c=>{ if(c.test(t)) counts[c.key]++; }); // a keyword anywhere in the text counts
+  });
+  document.getElementById("pmOrderCards").innerHTML = PM_ORDER_CARDS.map(c=>`
+    <div class="kpi-card" style="border-top-color:${c.color};background:${c.bg};"><div class="label" style="color:${c.color};">${c.label}</div><div class="value" style="color:${c.color};">${fmtNum(counts[c.key])}</div></div>`).join("");
+}
 function renderPmView(){
   buildPmFilterBar("pmFiltersHolder");
   document.getElementById("pmFiltersHolder").insertAdjacentHTML("afterbegin", pmBreakdownNote());
@@ -4257,6 +4394,7 @@ function renderPmView(){
     <div class="kpi-card"><div class="label">تعداد آماده پشتیبانی</div><div class="value">${fmtNum(overall.ready)}</div></div>
   `;
 
+  pmRenderOrderCards(filtered);
   const byEmp = pmGroupStats(filtered, r=>r.employee, r=>r.employee).sort((a,b)=>b.successPct-a.successPct);
   document.getElementById("pmEmployeeTableHolder").innerHTML = byEmp.length ? `
     <table><thead><tr><th>کارمند</th><th>تعداد کل</th><th>تعداد موفق</th><th>درصد موفق</th><th>تعداد آماده پشتیبانی</th></tr></thead>
@@ -4266,28 +4404,18 @@ function renderPmView(){
 
   renderPmPendingList(filtered);
 }
+function pmPendingExcelBlock(holderId, btnId, pending, prefix){
+  const holder = document.getElementById(holderId);
+  if(pending.length === 0){ holder.innerHTML = `<div class="empty-state">مورد مانده‌ای وجود ندارد.</div>`; return; }
+  holder.innerHTML = `
+    <p class="small-note">تعداد موارد مانده: <b>${fmtNum(pending.length)}</b> — لیست کامل را به‌صورت فایل اکسل دانلود کنید.</p>
+    <button class="btn-sm" id="${btnId}">⬇ دانلود لیست مانده‌ها (Excel)</button>`;
+  document.getElementById(btnId).onclick = ()=> downloadPendingXlsx(pending, prefix);
+}
 function renderPmPendingList(filtered){
   const pending = filtered.filter(r=>classifyPmStatus(r.status)==="آماده پشتیبانی")
     .slice().sort((a,b)=> (a.address||"").localeCompare((b.address||""), "fa"));
-  const holder = document.getElementById("pmPendingHolder");
-  if(pending.length === 0){
-    holder.innerHTML = `<div class="empty-state">مورد مانده‌ای وجود ندارد.</div>`;
-    return;
-  }
-  if(pending.length > 100){
-    holder.innerHTML = `
-      <p class="small-note">تعداد موارد مانده (${fmtNum(pending.length)}) بیش از ۱۰۰ مورد است — برای جلوگیری از کندی رابط کاربری، لیست کامل را به‌صورت فایل اکسل دانلود کنید.</p>
-      <button class="btn-sm" id="pmExportBtn">⬇ دانلود لیست مانده‌ها (Excel)</button>`;
-    document.getElementById("pmExportBtn").onclick = ()=> downloadPendingXlsx(pending, "pm-pending-list");
-    return;
-  }
-  holder.innerHTML = `<div class="pm-mini-grid">${pending.map(r=>`
-    <div class="pm-mini-card">
-      <b>${r.store||"—"}</b>
-      ترمینال: ${r.terminalId||"—"}<br>
-      آدرس: ${r.address||"—"}<br>
-      پشتیبان: ${r.employee||"—"}
-    </div>`).join("")}</div>`;
+  pmPendingExcelBlock("pmPendingHolder","pmExportBtn",pending,"pm-pending-list");
 }
 /* ---- Minimal real .xlsx writer (no external library) — CRC32 + uncompressed ("stored") ZIP + OOXML ---- */
 function crc32Bytes(buf){
@@ -4538,25 +4666,7 @@ function renderCollectionView(){
 function renderCollectionPendingList(filtered){
   const pending = filtered.filter(r=>classifyPmStatus(r.status)!=="موفق")
     .slice().sort((a,b)=> (a.address||"").localeCompare((b.address||""), "fa"));
-  const holder = document.getElementById("collectionPendingHolder");
-  if(pending.length === 0){
-    holder.innerHTML = `<div class="empty-state">مورد مانده‌ای وجود ندارد.</div>`;
-    return;
-  }
-  if(pending.length > 100){
-    holder.innerHTML = `
-      <p class="small-note">تعداد موارد مانده (${fmtNum(pending.length)}) بیش از ۱۰۰ مورد است — برای جلوگیری از کندی رابط کاربری، لیست کامل را به‌صورت فایل اکسل دانلود کنید.</p>
-      <button class="btn-sm" id="collectionExportBtn">⬇ دانلود لیست مانده‌ها (Excel)</button>`;
-    document.getElementById("collectionExportBtn").onclick = ()=> downloadPendingXlsx(pending, "collection-pending-list");
-    return;
-  }
-  holder.innerHTML = `<div class="pm-mini-grid">${pending.map(r=>`
-    <div class="pm-mini-card">
-      <b>${r.store||"—"}</b>
-      ترمینال: ${r.terminalId||"—"}<br>
-      آدرس: ${r.address||"—"}<br>
-      پشتیبان: ${r.employee||"—"}
-    </div>`).join("")}</div>`;
+  pmPendingExcelBlock("collectionPendingHolder","collectionExportBtn",pending,"collection-pending-list");
 }
 function renderCollectionRegionSection(){
   const collectionRecs = pmRecords.filter(isCollectionOrder);
